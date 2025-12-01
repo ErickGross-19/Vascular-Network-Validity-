@@ -40,8 +40,8 @@ def extract_centerline_graph(
     bbox_min = np.asarray(bbox_min, dtype=float)
     spacing = np.asarray(spacing, dtype=float)
 
-    # 3D skeleton
-    skeleton = skeletonize(fluid_mask)
+    # 3D skeleton (method='lee' for better topology preservation in 3D)
+    skeleton = skeletonize(fluid_mask, method='lee')
 
     # Distance transform gives radius in voxel units -> convert to world
     dist_voxel = ndimage.distance_transform_edt(fluid_mask)
@@ -71,11 +71,15 @@ def extract_centerline_graph(
             radius=float(radius),
         )
 
-    # Edges (6-connectivity in skeleton)
     neighbor_offsets = [
         (1, 0, 0), (-1, 0, 0),
         (0, 1, 0), (0, -1, 0),
         (0, 0, 1), (0, 0, -1),
+        (1, 1, 0), (1, -1, 0), (-1, 1, 0), (-1, -1, 0),
+        (1, 0, 1), (1, 0, -1), (-1, 0, 1), (-1, 0, -1),
+        (0, 1, 1), (0, 1, -1), (0, -1, 1), (0, -1, -1),
+        (1, 1, 1), (1, 1, -1), (1, -1, 1), (1, -1, -1),
+        (-1, 1, 1), (-1, 1, -1), (-1, -1, 1), (-1, -1, -1),
     ]
     skel_set = set(ijk_to_id.keys())
     for ijk, node_id in ijk_to_id.items():
