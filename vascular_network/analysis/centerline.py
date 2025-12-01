@@ -87,6 +87,12 @@ def extract_centerline_graph(
                 if not G.has_edge(node_id, nb_id):
                     G.add_edge(node_id, nb_id)
 
+    if keep_largest_component:
+        components = list(nx.connected_components(G))
+        if len(components) > 1:
+            largest = max(components, key=len)
+            G = G.subgraph(largest).copy()
+
     for u, v in G.edges:
         cu = np.asarray(G.nodes[u]["coord"], dtype=float)
         cv = np.asarray(G.nodes[v]["coord"], dtype=float)
