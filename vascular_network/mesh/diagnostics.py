@@ -65,8 +65,17 @@ def compute_diagnostics(
 
     extents = mesh.extents.tolist()
 
-    volume = estimate_voxel_volume(mesh, pitch=volume_pitch)
-    volume_source = "voxel_estimate"
+    # Volume: if watertight use mesh.volume (fast and accurate), else voxel estimate
+    if watertight:
+        try:
+            volume = float(mesh.volume)
+            volume_source = "mesh"
+        except Exception:
+            volume = estimate_voxel_volume(mesh, pitch=volume_pitch)
+            volume_source = "voxel_estimate"
+    else:
+        volume = estimate_voxel_volume(mesh, pitch=volume_pitch)
+        volume_source = "voxel_estimate"
 
     return MeshDiagnostics(
         watertight=watertight,

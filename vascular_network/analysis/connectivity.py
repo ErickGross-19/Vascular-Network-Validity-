@@ -4,44 +4,49 @@ from scipy import ndimage
 from typing import Tuple, Dict, Any
 
 
-def mesh_to_fluid_mask(mesh, pitch):
+def mesh_to_fluid_mask(mesh: trimesh.Trimesh, pitch: float = 0.1):
     """
-    Convert a mesh to a voxelized fluid mask.
-    
+    Voxelize a watertight fluid mesh into a 3D boolean array.
+
+    We ONLY use the VoxelGrid for occupancy; for coordinates we
+    map indices to the *mesh bounding box* ourselves, to avoid
+    any surprises with VoxelGrid.transform/origin.
+
     Returns
     -------
-    fluid_mask : np.ndarray
+    fluid_mask : (nx, ny, nz) bool
         Boolean array of voxel occupancy
-    origin : np.ndarray
-        Origin of the voxel grid
-    pitch : float
-        Voxel pitch (spacing)
+    bbox_min   : (3,) float
+        Lower corner of mesh bounding box
+    spacing    : (3,) float
+        Per-axis voxel spacing (dx, dy, dz)
     """
-    vox = mesh.voxelized(pitch)
+    # Voxelize with trimesh
+    vox = mesh.voxelized(pitch=pitch)
     vox_filled = vox.fill()
-
     fluid_mask = vox_filled.matrix.astype(bool)
 
-    if hasattr(vox_filled, "origin"):
-        origin = np.array(vox_filled.origin, dtype=float)
-    else:
-        origin = np.array(vox_filled.transform[:3, 3], dtype=float)
+    if not fluid_mask.any():
+        raise RuntimeError("Voxelization produced an empty fluid mask.")
 
-    pitch_attr = getattr(vox_filled, "pitch", pitch)
-    pitch_arr = np.asarray(pitch_attr, dtype=float)
+    # Axis-aligned bounding box of the mesh
+    bbox_min, bbox_max = mesh.bounds  # shape (2,3)
+    bbox_min = np.asarray(bbox_min, dtype=float)
+    bbox_max = np.asarray(bbox_max, dtype=float)
 
-    if pitch_arr.size == 1:
-        pitch_val = float(pitch_arr)
-    else:
-        pitch_val = float(pitch_arr[0])
+    nx, ny, nz = fluid_mask.shape
+    dims = np.array([nx, ny, nz], dtype=float)
 
-    return fluid_mask, origin, pitch_val
+    # Physical spacing per voxel in each direction
+    spacing = (bbox_max - bbox_min) / dims
+
+    return fluid_mask, bbox_min, spacing
 
 
 def analyze_connectivity_voxel(
     mesh: trimesh.Trimesh,
     pitch: float = 0.1,
-) -> Tuple[Dict[str, Any], np.ndarray, np.ndarray, float]:
+) -> Tuple[Dict[str, Any], np.ndarray, np.ndarray, np.ndarray]:
     """
     Analyze connectivity in voxel space:
       - number of fluid components
@@ -51,11 +56,15 @@ def analyze_connectivity_voxel(
     Returns
     -------
     connectivity_info : dict
+        Connectivity analysis results with both new and legacy keys
     fluid_mask        : (nx, ny, nz) bool
-    origin            : (3,) float
-    pitch             : float
+        Boolean array of voxel occupancy
+    bbox_min          : (3,) float
+        Lower corner of physical domain
+    spacing           : (3,) float
+        Voxel spacing (dx, dy, dz)
     """
-    fluid_mask, origin, pitch = mesh_to_fluid_mask(mesh, pitch=pitch)
+    fluid_mask, bbox_min, spacing = mesh_to_fluid_mask(mesh, pitch=pitch)
     nx, ny, nz = fluid_mask.shape
     num_fluid_voxels = int(fluid_mask.sum())
     if num_fluid_voxels == 0:
@@ -90,8 +99,14 @@ def analyze_connectivity_voxel(
     trapped_labels = sorted(list(set(all_labels) - set(port_labels)))
     trapped_sizes = [component_sizes[l - 1] for l in trapped_labels]
 
+    pitch_mean = float(np.mean(spacing))
+
     connectivity_info = {
-        "pitch": pitch,
+        "pitch_requested": float(pitch),
+        "grid_shape": (nx, ny, nz),
+        "bbox_min": bbox_min.tolist(),
+        "spacing": spacing.tolist(),
+        "pitch": pitch_mean,
         "shape": (nx, ny, nz),
         "num_fluid_voxels": num_fluid_voxels,
         "num_fluid_components": int(num_labels),
@@ -104,4 +119,4 @@ def analyze_connectivity_voxel(
         "trapped_component_sizes": trapped_sizes,
     }
 
-    return connectivity_info, fluid_mask, origin, pitch
+    return connectivity_info, fluid_mask, bbox_min, spacing
