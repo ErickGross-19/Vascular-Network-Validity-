@@ -9,6 +9,7 @@ def extract_centerline_graph(
     fluid_mask: np.ndarray,
     bbox_min: np.ndarray,
     spacing: np.ndarray,
+    keep_largest_component: bool = True,
 ):
     """
     Extract a centerline graph from a voxelized fluid domain.
