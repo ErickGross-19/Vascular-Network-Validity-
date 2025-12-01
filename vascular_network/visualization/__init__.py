@@ -19,6 +19,17 @@ from .reports import (
     show_full_report,
     load_report_json,
 )
+from .advanced_plots import (
+    plot_centerline_graph_2d_edges,
+    plot_flow_distribution_clean,
+    plot_centerline_scalar_clean,
+    plot_flow_histograms,
+    plot_length_and_radius_histograms,
+    plot_logQ_vs_radius,
+    print_centerline_geometry_summary,
+    print_flow_summary,
+    print_poiseuille_component_summary,
+)
 
 __all__ = [
     'plot_surface_quality',
@@ -36,4 +47,13 @@ __all__ = [
     'pretty_print_validation_report',
     'show_full_report',
     'load_report_json',
+    'plot_centerline_graph_2d_edges',
+    'plot_flow_distribution_clean',
+    'plot_centerline_scalar_clean',
+    'plot_flow_histograms',
+    'plot_length_and_radius_histograms',
+    'plot_logQ_vs_radius',
+    'print_centerline_geometry_summary',
+    'print_flow_summary',
+    'print_poiseuille_component_summary',
 ]
