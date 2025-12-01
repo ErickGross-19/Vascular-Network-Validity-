@@ -190,18 +190,19 @@ def validate_and_repair_geometry(
         flags=flags_list + neg_flags,
     )
 
-    connectivity_info, fluid_mask, origin, pitch = analyze_connectivity_voxel(
+    connectivity_info, fluid_mask, bbox_min, spacing = analyze_connectivity_voxel(
         mesh_repaired,
         pitch=voxel_pitch,
     )
 
     G_centerline, centerline_meta = extract_centerline_graph(
         fluid_mask,
-        origin=origin,
-        pitch=pitch,
+        bbox_min=bbox_min,
+        spacing=spacing,
     )
 
-    scaffold_mesh = make_scaffold_shell_from_fluid(fluid_mask, pitch, wall_thickness)
+    pitch_mean = float(np.mean(spacing))
+    scaffold_mesh = make_scaffold_shell_from_fluid(fluid_mask, pitch_mean, wall_thickness)
 
     if scaffold_stl_path is None:
         intermediate_stl_path = Path(intermediate_stl_path)
@@ -214,7 +215,7 @@ def validate_and_repair_geometry(
     scaffold_mesh.export(scaffold_stl_path)
     print("Scaffold STL saved at:", scaffold_stl_path)
 
-    radii = [float(data["radius"]) for _, data in G_centerline.nodes(data=True)]
+    radii = [float(data.get("radius", 0.0)) for _, data in G_centerline.nodes(data=True) if data.get("radius") is not None]
     centerline_summary = {
         "meta": centerline_meta,
         "radius_min": float(min(radii)) if radii else 0.0,

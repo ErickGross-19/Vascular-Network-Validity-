@@ -7,20 +7,45 @@ from typing import Dict, Tuple, Any
 
 def extract_centerline_graph(
     fluid_mask: np.ndarray,
-    origin: np.ndarray,
-    pitch: float,
+    bbox_min: np.ndarray,
+    spacing: np.ndarray,
+    keep_largest_component: bool = True,
 ):
     """
     Extract a centerline graph from a voxelized fluid domain.
 
-    - Skeletonize the fluid (3D).
+    - Skeletonize the fluid.
     - Distance transform -> local radius.
     - Build a graph with one node per skeleton voxel, radius, and coord.
-    - Keep only the largest connected component.
+
+    Coordinates are mapped from voxel indices (i,j,k) to world coords via:
+      coord = bbox_min + spacing * (i+0.5, j+0.5, k+0.5)
+
+    Parameters
+    ----------
+    fluid_mask : (nx, ny, nz) bool
+        Boolean array of voxel occupancy
+    bbox_min : (3,) float
+        Lower corner of physical domain
+    spacing : (3,) float
+        Voxel spacing (dx, dy, dz)
+
+    Returns
+    -------
+    G : nx.Graph
+        Centerline graph with node attributes: coord, radius, ijk
+    centerline_meta : dict
+        Metadata including bbox_min, spacing, num_nodes, num_edges
     """
+    bbox_min = np.asarray(bbox_min, dtype=float)
+    spacing = np.asarray(spacing, dtype=float)
+
+    # 3D skeleton
     skeleton = skeletonize(fluid_mask)
+
+    # Distance transform gives radius in voxel units -> convert to world
     dist_voxel = ndimage.distance_transform_edt(fluid_mask)
-    dist_world = dist_voxel * pitch
+    dist_world = dist_voxel * np.mean(spacing)
 
     idx_i, idx_j, idx_k = np.where(skeleton)
     num_skel_voxels = len(idx_i)
@@ -30,21 +55,23 @@ def extract_centerline_graph(
     G = nx.Graph()
     ijk_to_id: Dict[Tuple[int, int, int], int] = {}
 
+    # Nodes
     for node_id, (i, j, k) in enumerate(zip(idx_i, idx_j, idx_k)):
         ijk = (int(i), int(j), int(k))
         ijk_to_id[ijk] = node_id
 
-        coord = origin + pitch * np.array([i, j, k], dtype=float)
-        radius = float(dist_world[i, j, k])
+        # world coordinates from bounding box + spacing (voxel centers)
+        coord = bbox_min + spacing * np.array([i + 0.5, j + 0.5, k + 0.5], dtype=float)
+        radius = dist_world[i, j, k]
 
         G.add_node(
             node_id,
             ijk=ijk,
             coord=coord,
-            pos=coord,
-            radius=radius,
+            radius=float(radius),
         )
 
+    # Edges (6-connectivity in skeleton)
     neighbor_offsets = [
         (1, 0, 0), (-1, 0, 0),
         (0, 1, 0), (0, -1, 0),
@@ -60,12 +87,11 @@ def extract_centerline_graph(
                 if not G.has_edge(node_id, nb_id):
                     G.add_edge(node_id, nb_id)
 
-    components = list(nx.connected_components(G))
-    if not components:
-        raise RuntimeError("Centerline graph ended up empty.")
-    if len(components) > 1:
-        largest = max(components, key=len)
-        G = G.subgraph(largest).copy()
+    if keep_largest_component:
+        components = list(nx.connected_components(G))
+        if len(components) > 1:
+            largest = max(components, key=len)
+            G = G.subgraph(largest).copy()
 
     for u, v in G.edges:
         cu = np.asarray(G.nodes[u]["coord"], dtype=float)
@@ -74,10 +100,11 @@ def extract_centerline_graph(
         G.edges[u, v]["length"] = length
 
     centerline_meta = {
-        "origin": origin.tolist(),
-        "pitch": float(pitch),
+        "bbox_min": bbox_min.tolist(),
+        "spacing": spacing.tolist(),
         "num_nodes": G.number_of_nodes(),
         "num_edges": G.number_of_edges(),
+        "grid_shape": list(fluid_mask.shape),
     }
 
     return G, centerline_meta
