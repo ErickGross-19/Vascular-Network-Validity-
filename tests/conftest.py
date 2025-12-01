@@ -42,7 +42,7 @@ def y_branch_mesh():
     angle1 = np.radians(30)
     rotation1 = trimesh.transformations.rotation_matrix(angle1, [1, 0, 0])
     outlet1.apply_transform(rotation1)
-    outlet1.apply_translation([-0.5, 0, 1.0])
+    outlet1.apply_translation([-0.3, 0, 0.2])
     
     R_out2 = 0.3
     L_out2 = 2.0
@@ -51,7 +51,7 @@ def y_branch_mesh():
     angle2 = np.radians(-30)
     rotation2 = trimesh.transformations.rotation_matrix(angle2, [1, 0, 0])
     outlet2.apply_transform(rotation2)
-    outlet2.apply_translation([0.5, 0, 1.0])
+    outlet2.apply_translation([0.3, 0, 0.2])
     
     y_branch = trimesh.util.concatenate([inlet, outlet1, outlet2])
     

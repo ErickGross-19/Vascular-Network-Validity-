@@ -62,68 +62,21 @@ def plot_centerline_scalar(
 ):
     """
     Color edges by a scalar attribute (e.g., Q).
+    
+    This function now calls plot_centerline_scalar_clean for improved visualization.
     """
-    segments = []
-    vals = []
-
-    for u, v, data in G.edges(data=True):
-        p0 = np.asarray(G.nodes[u].get("pos", G.nodes[u].get("coord", [0, 0, 0])), float)
-        p1 = np.asarray(G.nodes[v].get("pos", G.nodes[v].get("coord", [0, 0, 0])), float)
-        segments.append([p0[[0, 2]], p1[[0, 2]]])
-        val = data.get(edge_attr, np.nan)
-        vals.append(val)
-
-    vals = np.array(vals, dtype=float)
-    good = np.isfinite(vals)
-    if not good.any():
-        print(f"[plot_centerline_scalar] No finite values for '{edge_attr}'.")
-        return
-
-    vals = vals[good]
-    segments = np.array(segments, dtype=float)[good]
-
-    if log_abs:
-        vals_plot = np.log10(np.abs(vals) + 1e-30)
-    else:
-        vals_plot = vals
-
-    lc = LineCollection(segments, array=vals_plot, cmap=cmap, linewidth=2.0)
-
-    fig, ax = plt.subplots(figsize=(4, 6))
-    ax.add_collection(lc)
-    ax.autoscale()
-    ax.set_aspect("equal")
-    ax.set_xlabel("x")
-    ax.set_ylabel("z")
-    ax.set_title(title)
-    cbar = fig.colorbar(lc, ax=ax)
-    cbar.set_label(f"log10(|{edge_attr}|)" if log_abs else edge_attr)
-    plt.tight_layout()
-    plt.show()
+    from .advanced_plots import plot_centerline_scalar_clean
+    plot_centerline_scalar_clean(G, edge_attr=edge_attr, log_abs=log_abs, title=title)
 
 
 def plot_flow_distribution(G, edge_attr="Q"):
     """
     Plot the distribution of flow values across edges.
+    
+    This function now calls plot_flow_distribution_clean for improved visualization.
     """
-    vals = []
-    for _, _, data in G.edges(data=True):
-        v = data.get(edge_attr, np.nan)
-        if np.isfinite(v):
-            vals.append(abs(v))
-    vals = np.array(vals, dtype=float)
-    if vals.size == 0:
-        print("[plot_flow_distribution] No finite flow values.")
-        return
-
-    vals_sorted = np.sort(vals)[::-1]
-    plt.figure(figsize=(4, 3))
-    plt.plot(np.arange(len(vals_sorted)), vals_sorted, marker=".", linestyle="none")
-    plt.xlabel("Edge rank (by |Q|)")
-    plt.ylabel("|Q|")
-    plt.title("Flow distribution across branches")
-    plt.tight_layout()
-    plt.show()
+    from .advanced_plots import plot_flow_distribution_clean
+    plot_flow_distribution_clean(G, edge_attr=edge_attr)
 
 
 def plot_poiseuille_histograms(G, mu: float = 1.0e-3):
