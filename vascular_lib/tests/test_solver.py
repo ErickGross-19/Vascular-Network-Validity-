@@ -14,7 +14,7 @@ from vascular_lib.core.types import Direction3D
 
 def test_solve_flow_simple():
     """Test flow solver on simple linear network."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(
@@ -52,7 +52,7 @@ def test_solve_flow_simple():
 
 def test_solve_flow_bifurcation():
     """Test flow solver on Y-branch."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(
@@ -97,7 +97,7 @@ def test_solve_flow_bifurcation():
 
 def test_flow_conservation():
     """Test that flow is conserved at junctions."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(
@@ -140,7 +140,7 @@ def test_flow_conservation():
 
 def test_pressure_monotonicity():
     """Test that pressure decreases along flow direction."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(

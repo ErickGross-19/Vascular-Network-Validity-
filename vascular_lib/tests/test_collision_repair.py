@@ -14,7 +14,7 @@ from vascular_lib.core.types import Direction3D
 
 def test_collision_detection():
     """Test that collisions are detected."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet1_result = add_inlet(
@@ -55,7 +55,7 @@ def test_collision_detection():
 
 def test_repair_by_shrink():
     """Test collision repair by shrinking."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet1_result = add_inlet(
@@ -99,7 +99,7 @@ def test_repair_by_shrink():
 
 def test_repair_by_terminate():
     """Test collision repair by terminating."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet1_result = add_inlet(
@@ -145,7 +145,7 @@ def test_repair_by_terminate():
 
 def test_no_collisions():
     """Test that well-separated branches don't trigger collisions."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet1_result = add_inlet(

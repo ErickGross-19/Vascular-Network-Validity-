@@ -15,7 +15,7 @@ from vascular_lib.core.types import Direction3D
 
 def test_to_networkx_graph():
     """Test conversion to NetworkX graph."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain, metadata={"name": "test"})
     
     inlet_result = add_inlet(
@@ -55,7 +55,7 @@ def test_to_networkx_graph():
 
 def test_networkx_roundtrip():
     """Test NetworkX conversion round-trip."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network1 = create_network(domain)
     
     add_inlet(network1, position=(0, 0, 0), direction=Direction3D(x=1, y=0, z=0), radius=0.005)
@@ -70,7 +70,7 @@ def test_networkx_roundtrip():
 
 def test_to_trimesh_fast():
     """Test fast mesh export."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(
@@ -102,7 +102,7 @@ def test_serialization_json_safe():
     """Test that all results are JSON-serializable."""
     import json
     
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(

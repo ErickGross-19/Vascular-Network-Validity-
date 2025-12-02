@@ -12,7 +12,7 @@ import numpy as np
 
 def test_deterministic_ids():
     """Test that same seed produces same IDs."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     
     network1 = create_network(domain, seed=42)
     network2 = create_network(domain, seed=42)
@@ -36,7 +36,7 @@ def test_deterministic_ids():
 
 def test_space_colonization_determinism():
     """Test that space colonization is deterministic with same seed."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     
     np.random.seed(123)
     tissue_points = np.random.uniform(-0.08, 0.08, size=(100, 3))
@@ -77,7 +77,7 @@ def test_space_colonization_determinism():
 
 def test_serialization_roundtrip():
     """Test that network can be serialized and deserialized."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axes=(0.1, 0.1, 0.1))
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network1 = create_network(domain, metadata={"name": "test", "version": "1.0"})
     
     add_inlet(
