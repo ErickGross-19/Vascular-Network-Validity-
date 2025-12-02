@@ -27,7 +27,7 @@ def test_solve_flow_simple():
     grow_result = grow_branch(
         network,
         from_node_id=inlet_result.new_ids["node"],
-        length=0.08,
+        length=0.04,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
@@ -145,7 +145,7 @@ def test_pressure_monotonicity():
     grow_result = grow_branch(
         network,
         from_node_id=inlet_result.new_ids["node"],
-        length=0.08,
+        length=0.04,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
