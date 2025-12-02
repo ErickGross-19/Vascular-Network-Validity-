@@ -25,8 +25,9 @@ def main():
     
     print("\n[1/8] Creating liver domain and network...")
     domain = EllipsoidDomain(
-        center=(0, 0, 0),
-        semi_axes=(0.12, 0.1, 0.08),  # 12cm x 10cm x 8cm liver
+        semi_axis_a=0.12,  # 12cm x-axis
+        semi_axis_b=0.1,   # 10cm y-axis
+        semi_axis_c=0.08,  # 8cm z-axis
     )
     
     network = create_network(
