@@ -27,16 +27,21 @@ config = LiverVascularConfig(random_seed=42)
 config.murray.arterial_root_radius = 0.006  # 6 mm
 config.growth.max_segments_per_tree = 1000
 arterial_tree, venous_tree = generate_liver_vasculature(config)
+
+# Export to files
+from generators.liver.export import export_tree_to_python, export_tree_to_json
+export_tree_to_python(arterial_tree, "output/arterial_tree.py")
+export_tree_to_json(arterial_tree, "output/arterial_tree.json")
 ```
 
 ### Command-Line Usage
 
 ```bash
 # Generate with default parameters
-python examples/generate_liver_network.py --output output/liver_network
+python vascular_network/examples/generate_liver_network.py --output output/liver_network
 
 # Customize generation
-python examples/generate_liver_network.py \
+python vascular_network/examples/generate_liver_network.py \
     --output output/my_liver \
     --seed 123 \
     --max-segments 2000
