@@ -15,7 +15,7 @@ from vascular_lib.rules.constraints import InteractionRuleSpec
 def test_create_anastomosis_basic():
     """Test basic anastomosis creation between arterial and venous nodes."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial_inlet = add_inlet(
         network,
@@ -72,7 +72,7 @@ def test_create_anastomosis_basic():
 def test_create_anastomosis_too_long():
     """Test that anastomosis fails if nodes are too far apart."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial_result = add_inlet(
         network,
@@ -106,7 +106,7 @@ def test_create_anastomosis_too_long():
 def test_create_anastomosis_incompatible_types():
     """Test that anastomosis fails for incompatible vessel types."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial1 = add_inlet(
         network,
@@ -137,7 +137,7 @@ def test_create_anastomosis_incompatible_types():
 def test_create_anastomosis_dry_run():
     """Test dry_run mode for anastomosis."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial = add_inlet(
         network,
@@ -172,7 +172,7 @@ def test_create_anastomosis_dry_run():
 def test_check_tree_interactions():
     """Test checking interactions between arterial and venous trees."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial_inlet = add_inlet(
         network,
@@ -219,7 +219,7 @@ def test_check_tree_interactions():
 def test_check_tree_interactions_single_tree():
     """Test interaction check with only one tree type."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     add_inlet(
         network,

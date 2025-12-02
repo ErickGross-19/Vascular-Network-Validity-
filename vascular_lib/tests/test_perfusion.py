@@ -14,7 +14,7 @@ from vascular_lib.rules.constraints import InteractionRuleSpec
 def test_compute_perfusion_metrics_dual_tree():
     """Test perfusion metrics with both arterial and venous trees."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.05, semi_axis_b=0.05, semi_axis_c=0.05)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial_inlet = add_inlet(
         network,
@@ -72,7 +72,7 @@ def test_compute_perfusion_metrics_dual_tree():
 def test_compute_perfusion_metrics_single_tree():
     """Test perfusion metrics with only one tree type."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.05, semi_axis_b=0.05, semi_axis_c=0.05)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial_inlet = add_inlet(
         network,
@@ -93,7 +93,7 @@ def test_compute_perfusion_metrics_single_tree():
 def test_compute_perfusion_metrics_with_weights():
     """Test perfusion metrics with custom weights."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.05, semi_axis_b=0.05, semi_axis_c=0.05)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     add_inlet(
         network,
@@ -123,7 +123,7 @@ def test_compute_perfusion_metrics_with_weights():
 def test_compute_perfusion_metrics_with_distance_cap():
     """Test perfusion metrics with distance cap."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     add_inlet(
         network,
@@ -154,7 +154,7 @@ def test_compute_perfusion_metrics_with_distance_cap():
 def test_suggest_anastomosis_locations():
     """Test suggesting anastomosis locations based on perfusion."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.05, semi_axis_b=0.05, semi_axis_c=0.05)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     arterial_inlet = add_inlet(
         network,
@@ -218,7 +218,7 @@ def test_suggest_anastomosis_locations():
 def test_suggest_anastomosis_no_under_perfused():
     """Test suggesting anastomoses when perfusion is good."""
     domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.02, semi_axis_b=0.02, semi_axis_c=0.02)
-    network = create_network(domain).metadata["network"]
+    network = create_network(domain)
     
     add_inlet(
         network,
