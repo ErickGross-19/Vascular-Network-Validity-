@@ -77,7 +77,7 @@ def test_solve_flow_bifurcation():
         # radius_rule defaults to Murray
     )
     
-    for child_id in bifurc_result.new_ids["child_nodes"]:
+    for child_id in bifurc_result.new_ids["nodes"]:
         network.nodes[child_id].node_type = "outlet"
     
     result = solve_flow(network, pin=13000.0, pout=2000.0)
@@ -118,7 +118,7 @@ def test_flow_conservation():
         # radius_rule defaults to Murray
     )
     
-    for child_id in bifurc_result.new_ids["child_nodes"]:
+    for child_id in bifurc_result.new_ids["nodes"]:
         network.nodes[child_id].node_type = "outlet"
     
     solve_result = solve_flow(network)
