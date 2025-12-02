@@ -74,7 +74,7 @@ def test_solve_flow_bifurcation():
         network,
         at_node_id=trunk_result.new_ids["node"],
         child_lengths=(0.03, 0.03),
-        radius_rule="murray",
+        # radius_rule defaults to Murray
     )
     
     for child_id in bifurc_result.new_ids["child_nodes"]:
@@ -115,7 +115,7 @@ def test_flow_conservation():
         network,
         at_node_id=trunk_result.new_ids["node"],
         child_lengths=(0.03, 0.03),
-        radius_rule="murray",
+        # radius_rule defaults to Murray
     )
     
     for child_id in bifurc_result.new_ids["child_nodes"]:
