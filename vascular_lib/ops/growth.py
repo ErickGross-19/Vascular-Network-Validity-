@@ -6,8 +6,8 @@ from typing import Optional, Tuple, List
 import numpy as np
 from ..core.types import Point3D, Direction3D, TubeGeometry
 from ..core.network import VascularNetwork, Node, VesselSegment
-from ..core.result import OperationResult, OperationStatus, Delta
-from ..rules.constraints import BranchingConstraints, RadiusRuleSpec
+from ..core.result import OperationResult, OperationStatus, Delta, ErrorCode
+from ..rules.constraints import BranchingConstraints, RadiusRuleSpec, DegradationRuleSpec
 from ..rules.radius import apply_radius_rule
 
 
@@ -188,6 +188,7 @@ def bifurcate(
     child_lengths: Tuple[float, float],
     angle_deg: float = 45.0,
     radius_rule: Optional[RadiusRuleSpec] = None,
+    degradation_rule: Optional[DegradationRuleSpec] = None,
     constraints: Optional[BranchingConstraints] = None,
     check_collisions: bool = True,
     seed: Optional[int] = None,
@@ -207,6 +208,8 @@ def bifurcate(
         Branching angle in degrees (each child deviates by this angle)
     radius_rule : RadiusRuleSpec, optional
         Rule for computing child radii (default: Murray's law)
+    degradation_rule : DegradationRuleSpec, optional
+        Rule for radius degradation across generations (default: none)
     constraints : BranchingConstraints, optional
         Branching constraints
     check_collisions : bool
@@ -240,6 +243,8 @@ def bifurcate(
     
     parent_direction = Direction3D.from_dict(parent_node.attributes["direction"])
     parent_radius = parent_node.attributes.get("radius", 0.005)
+    parent_generation = parent_node.attributes.get("branch_order", 0)
+    child_generation = parent_generation + 1
     
     if angle_deg > constraints.max_branch_angle_deg:
         return OperationResult.failure(
@@ -247,13 +252,29 @@ def bifurcate(
             errors=["Angle too large"],
         )
     
+    if degradation_rule is not None:
+        should_term, term_reason = degradation_rule.should_terminate(parent_radius, child_generation)
+        if should_term:
+            return OperationResult.failure(
+                message=f"Bifurcation blocked by degradation rule: {term_reason}",
+                error_codes=[
+                    ErrorCode.BELOW_MIN_TERMINAL_RADIUS.value if "radius" in term_reason.lower()
+                    else ErrorCode.MAX_GENERATION_EXCEEDED.value
+                ],
+            )
+    
     rng = np.random.default_rng(seed) if seed is not None else network.id_gen.rng
     r1, r2 = apply_radius_rule(parent_radius, radius_rule, rng)
     
+    if degradation_rule is not None:
+        r1 = degradation_rule.apply_degradation(r1, child_generation)
+        r2 = degradation_rule.apply_degradation(r2, child_generation)
+    
     if r1 < constraints.min_radius or r2 < constraints.min_radius:
         return OperationResult.failure(
-            message=f"Child radii below minimum",
+            message=f"Child radii below minimum after degradation",
             errors=["Radii too small"],
+            error_codes=[ErrorCode.RADIUS_TOO_SMALL.value],
         )
     
     parent_dir_arr = parent_direction.to_array()
