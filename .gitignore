@@ -60,3 +60,13 @@ results/
 *.tmp
 *.bak
 *.log
+
+# Generated output files
+output/*.stl
+output/*.json
+output/*.py
+!output/.gitkeep
+
+# Temporary files
+*.npz
+*.pkl
