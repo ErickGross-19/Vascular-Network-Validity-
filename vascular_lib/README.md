@@ -29,10 +29,10 @@ from vascular_lib import (
     bifurcate,
     save_json,
 )
-from vascular_lib.core import EllipsoidDomain
+from vascular_lib.core import EllipsoidDomain, Direction3D
 
 # Create liver-shaped domain
-domain = EllipsoidDomain(0.12, 0.10, 0.08)  # 12cm x 10cm x 8cm
+domain = EllipsoidDomain(semi_axis_a=0.12, semi_axis_b=0.10, semi_axis_c=0.08)
 
 # Create network
 network = create_network(domain, seed=42)
@@ -41,7 +41,7 @@ network = create_network(domain, seed=42)
 result = add_inlet(
     network,
     position=(-0.10, 0.0, 0.0),
-    direction=(1.0, 0.0, 0.0),
+    direction=Direction3D(dx=1.0, dy=0.0, dz=0.0),
     radius=0.005,
 )
 inlet_id = result.new_ids['node']
@@ -51,7 +51,7 @@ result = grow_branch(
     network,
     from_node_id=inlet_id,
     length=0.02,
-    direction=(1.0, 0.0, 0.0),
+    direction=Direction3D(dx=1.0, dy=0.0, dz=0.0),
 )
 
 # Create bifurcation
