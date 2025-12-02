@@ -46,7 +46,7 @@ def main():
     inlet_result = add_inlet(
         network,
         position=(-0.10, 0, 0),
-        direction=Direction3D(dx=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,  # 5mm arterial inlet
         vessel_type="arterial",
     )
@@ -54,7 +54,7 @@ def main():
     outlet_result = add_outlet(
         network,
         position=(0.10, 0, 0),
-        direction=Direction3D(dx=-1, y=0, z=0),
+        direction=Direction3D(dx=-1, dy=0, dz=0),
         radius=0.006,  # 6mm venous outlet
         vessel_type="venous",
     )
