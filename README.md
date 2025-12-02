@@ -1,23 +1,57 @@
-# Vascular Network Validation and Analysis Package
+# Vascular Network Tools
 
-A comprehensive Python package for validating, repairing, and analyzing vascular network geometries. This package provides tools for processing STL and Python CAD files, generating watertight meshes, performing connectivity analysis, extracting centerlines, and running CFD (Poiseuille flow) simulations.
+A comprehensive suite of Python tools for designing, generating, and validating vascular networks. This repository contains three main components that work together to support the full lifecycle of vascular network development.
 
-## Features
+## 🎯 Choose Your Path
 
-- **Input Processing**: Support for STL and Python CAD files (CadQuery)
-- **Mesh Repair**: Automated mesh cleaning, voxel remeshing, and watertight generation
-- **Analysis Tools**:
-  - Mesh diagnostics (watertightness, Euler number, components)
-  - Surface quality metrics (face areas, edge lengths, aspect ratios)
-  - Connectivity analysis (voxel-based)
-  - Centerline extraction from voxelized fluid domains
-  - Poiseuille flow network analysis (CFD)
-- **Visualization**: Comprehensive plotting functions for mesh quality, flow distribution, and analysis results
-- **Reporting**: JSON and text-based validation reports with all metrics
+### 🧠 Design Networks with AI (vascular_lib)
+**For:** LLM-driven iterative design, programmatic network construction  
+**Use when:** You want to design custom vascular networks using composable operations
 
-## Installation
+```python
+from vascular_lib import create_network, add_inlet, grow_branch, bifurcate
+from vascular_lib.core import EllipsoidDomain
 
-### From Source
+domain = EllipsoidDomain(semi_axis_a=0.12, semi_axis_b=0.1, semi_axis_c=0.08)
+network = create_network(domain, seed=42)
+result = add_inlet(network, position=(-0.10, 0, 0), direction=(1, 0, 0), radius=0.005)
+```
+
+👉 [Learn more about vascular_lib](vascular_lib/README.md)
+
+### 🌳 Generate Organ Networks (generators)
+**For:** Creating realistic organ-specific vascular networks  
+**Use when:** You need a complete arterial/venous tree for a specific organ
+
+```python
+from generators.liver import generate_liver_network
+
+network = generate_liver_network(
+    arterial_segments=500,
+    venous_segments=500,
+    output_dir="output/",
+)
+```
+
+👉 [Learn more about generators](generators/README.md)
+
+### ✅ Validate & Analyze (vascular_network)
+**For:** Mesh repair, CFD analysis, quality validation  
+**Use when:** You have an STL file or network that needs validation and analysis
+
+```python
+from vascular_network import validate_and_repair_geometry
+
+report, centerline = validate_and_repair_geometry(
+    input_path="network.stl",
+    cleaned_stl_path="cleaned.stl",
+    report_path="report.json",
+)
+```
+
+👉 [Learn more about vascular_network](vascular_network/README.md)
+
+## 📦 Installation
 
 ```bash
 git clone https://github.com/ErickGross-19/Vascular-Network-Validity-.git
@@ -27,127 +61,132 @@ pip install -e .
 
 ### Dependencies
 
-The package requires the following dependencies:
+Core dependencies:
 - numpy >= 1.20.0
 - trimesh >= 3.9.0
-- pymeshfix >= 0.16.0
-- pyvista >= 0.32.0
 - networkx >= 2.5
 - scipy >= 1.6.0
-- scikit-image >= 0.18.0
-- matplotlib >= 3.3.0
-- cadquery >= 2.0
 
-## Quick Start
+Additional dependencies for specific components:
+- pymeshfix >= 0.16.0 (for mesh repair)
+- pyvista >= 0.32.0 (for visualization)
+- scikit-image >= 0.18.0 (for voxel processing)
+- matplotlib >= 3.3.0 (for plotting)
 
-### Basic Usage
+## 🚀 Quick Start Examples
+
+### End-to-End Workflow
 
 ```python
+# 1. Design a network with vascular_lib
+from vascular_lib import create_network, space_colonization_step
+from vascular_lib.core import EllipsoidDomain
+import numpy as np
+
+domain = EllipsoidDomain(semi_axis_a=0.12, semi_axis_b=0.1, semi_axis_c=0.08)
+network = create_network(domain, seed=42)
+
+# Add inlet and grow network
+from vascular_lib import add_inlet
+add_inlet(network, position=(-0.10, 0, 0), direction=(1, 0, 0), radius=0.005)
+
+# Use space colonization for organic growth
+tissue_points = np.random.uniform(-0.1, 0.1, (200, 3))
+from vascular_lib.ops import space_colonization_step, SpaceColonizationParams
+params = SpaceColonizationParams(vessel_type="arterial")
+space_colonization_step(network, tissue_points, params, seed=42)
+
+# 2. Export to STL
+from vascular_lib.adapters import export_stl
+export_stl(network, output_path="network.stl", mode="fast", repair=True)
+
+# 3. Validate and analyze with vascular_network
 from vascular_network import validate_and_repair_geometry
-
-# Process an STL file
-report, centerline_graph = validate_and_repair_geometry(
-    input_path="input.stl",
-    cleaned_stl_path="output_cleaned.stl",
-    scaffold_stl_path="output_scaffold.stl",
+report, centerline = validate_and_repair_geometry(
+    input_path="network.stl",
+    cleaned_stl_path="cleaned.stl",
     report_path="report.json",
-    voxel_pitch=0.1,
-    smooth_iters=40,
 )
 
-# Check the validation status
-print(f"Status: {report.flags.status}")
 print(f"Watertight: {report.after_repair.watertight}")
-print(f"Volume: {report.after_repair.volume}")
+print(f"Volume: {report.after_repair.volume:.6f} m³")
 ```
 
-### Using Individual Functions
+### Generate a Liver Network
 
 ```python
-from vascular_network.io import load_stl_mesh
-from vascular_network.mesh import basic_clean, voxel_remesh_and_smooth
-from vascular_network.analysis import extract_centerline_graph, compute_poiseuille_network
-from vascular_network.visualization import show_full_report
+from generators.liver import generate_liver_network
 
-# Load and clean mesh
-mesh = load_stl_mesh("input.stl")
-mesh_clean = basic_clean(mesh)
-mesh_voxel = voxel_remesh_and_smooth(mesh_clean, pitch=0.1)
-
-# Analyze connectivity and extract centerline
-from vascular_network.analysis import analyze_connectivity_voxel
-connectivity_info, fluid_mask, origin, pitch = analyze_connectivity_voxel(mesh_voxel)
-centerline_graph, meta = extract_centerline_graph(fluid_mask, origin, pitch)
-
-# Run CFD analysis
-cfd_results = compute_poiseuille_network(centerline_graph, mu=1.0)
-
-# Visualize results
-show_full_report(report, centerline_graph)
-```
-
-### Processing Python CAD Files
-
-```python
-# Process a CadQuery Python file
-report, centerline_graph = validate_and_repair_geometry(
-    input_path="model.py",  # CadQuery script
-    cleaned_stl_path="output_cleaned.stl",
-    report_path="report.json",
+# Generate complete liver vascular network
+network = generate_liver_network(
+    arterial_segments=500,
+    venous_segments=500,
+    output_dir="output/liver_network",
+    seed=42,
 )
+
+# Outputs:
+# - output/liver_network/arterial_tree.py
+# - output/liver_network/venous_tree.py
+# - output/liver_network/network_metadata.json
 ```
 
-## API Reference
+## 🏗️ Repository Structure
 
-### Main Pipeline Function
+```
+Vascular-Network-Validity-/
+├── vascular_lib/          # LLM-friendly design library
+│   ├── core/              # Data structures (Node, Segment, Network)
+│   ├── ops/               # Operations (grow, bifurcate, colonize)
+│   ├── analysis/          # Flow solver, coverage analysis
+│   ├── adapters/          # Integration with vascular_network
+│   ├── examples/          # Example scripts
+│   └── tests/             # Unit tests
+│
+├── generators/            # Organ-specific network generators
+│   └── liver/             # Liver vascular network generator
+│       ├── config.py      # Configuration parameters
+│       ├── geometry.py    # Liver domain geometry
+│       ├── growth.py      # Growth algorithms
+│       └── export.py      # Export to Python/JSON
+│
+├── vascular_network/      # Validation and analysis tools
+│   ├── io/                # STL/Python file loaders
+│   ├── mesh/              # Mesh repair and diagnostics
+│   ├── analysis/          # Centerline, CFD, metrics
+│   ├── visualization/     # Plotting functions
+│   ├── examples/          # Example scripts
+│   └── tests/             # Unit tests
+│
+└── docs/                  # Documentation
+    └── legacy/            # Archived legacy code
+```
 
-#### `validate_and_repair_geometry(input_path, ...)`
+## 🧪 Testing
 
-Full validation and repair pipeline that processes input files and generates comprehensive reports.
-
-**Parameters:**
-- `input_path` (str or Path): Path to input STL or Python CAD file
-- `cleaned_stl_path` (str or Path, optional): Path to save cleaned STL
-- `scaffold_stl_path` (str or Path, optional): Path to save scaffold shell STL
-- `wall_thickness` (float): Wall thickness for scaffold shell (default: 0.4)
-- `report_path` (str or Path, optional): Path to save JSON report
-- `voxel_pitch` (float): Voxel pitch for remeshing (default: 0.1)
-- `smooth_iters` (int): Number of smoothing iterations (default: 40)
-- `dilation_iters` (int): Number of dilation iterations (default: 2)
-- `inlet_nodes` (sequence, optional): Inlet nodes for CFD analysis
-- `outlet_nodes` (sequence, optional): Outlet nodes for CFD analysis
-
-**Returns:**
-- `report` (ValidationReport): Validation report with all metrics
-- `centerline_graph` (nx.Graph): Centerline graph with CFD results
-
-### Module Organization
-
-- `vascular_network.io`: Input/output operations (loaders, exporters)
-- `vascular_network.mesh`: Mesh processing (cleaning, repair, diagnostics)
-- `vascular_network.analysis`: Analysis operations (connectivity, centerline, CFD)
-- `vascular_network.visualization`: Plotting and visualization functions
-- `vascular_network.models`: Data classes for reports and metrics
-
-## Examples
-
-See the `examples/` directory for complete usage examples:
-- `example_basic.py`: Basic usage with STL files
-- `example_cad.py`: Processing Python CAD files
-- `example_analysis.py`: Advanced analysis and visualization
-
-## Testing
-
-Run the test suite:
-
+Run all tests:
 ```bash
-pytest tests/
+pytest vascular_lib/tests/
+pytest vascular_network/tests/
 ```
 
-The test suite includes:
-- Unit tests for cylinder geometries
-- Unit tests for Y-branch (branching) structures
-- Tests for mesh operations and analysis functions
+Run specific test suites:
+```bash
+# Test LLM library
+pytest vascular_lib/tests/ -v
+
+# Test validation package
+pytest vascular_network/tests/ -v
+
+# Test with coverage
+pytest --cov=vascular_lib --cov=vascular_network
+```
+
+## 📚 Documentation
+
+- [vascular_lib Documentation](vascular_lib/README.md) - LLM-friendly design library
+- [generators Documentation](generators/README.md) - Organ-specific network generators
+- [vascular_network Documentation](vascular_network/README.md) - Validation and analysis tools
 
 ## Contributing
 
@@ -157,20 +196,26 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Citation
+## 🔗 Related Work
+
+- [vascular_lib](vascular_lib/) - Composable operations for LLM-driven design
+- [generators](generators/) - Organ-specific network generation
+- [vascular_network](vascular_network/) - Validation, repair, and CFD analysis
+
+## 📖 Citation
 
 If you use this package in your research, please cite:
 
-```
-@software{vascular_network,
+```bibtex
+@software{vascular_network_tools,
   author = {Gross, Erick},
-  title = {Vascular Network Validation and Analysis Package},
+  title = {Vascular Network Tools: Design, Generation, and Validation},
   year = {2025},
   url = {https://github.com/ErickGross-19/Vascular-Network-Validity-}
 }
 ```
 
-## Contact
+## 📧 Contact
 
 For questions or issues, please open an issue on GitHub or contact:
 - Erick Gross - erickgross1924@gmail.com
