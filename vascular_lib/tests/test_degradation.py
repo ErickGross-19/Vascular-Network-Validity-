@@ -79,7 +79,7 @@ def test_degradation_termination_generation():
 
 def test_bifurcate_with_degradation():
     """Test bifurcation with degradation rules."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(
@@ -110,7 +110,7 @@ def test_bifurcate_with_degradation():
 
 def test_bifurcate_blocked_by_degradation():
     """Test that bifurcation is blocked when degradation rules prevent it."""
-    domain = EllipsoidDomain(center=(0, 0, 0), semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
+    domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network = create_network(domain)
     
     inlet_result = add_inlet(
