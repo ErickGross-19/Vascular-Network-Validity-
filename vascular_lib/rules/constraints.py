@@ -1,0 +1,186 @@
+"""
+Constraint specifications for vascular network design.
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Literal, Optional
+
+
+@dataclass
+class BranchingConstraints:
+    """
+    Constraints for branching behavior.
+    
+    Controls how vessels can branch and grow.
+    """
+    
+    min_radius: float = 0.0003  # 0.3 mm (capillary scale)
+    max_radius: float = 0.01  # 10 mm
+    max_branch_order: int = 12
+    min_segment_length: float = 0.001  # 1 mm
+    max_segment_length: float = 0.05  # 50 mm
+    max_branch_angle_deg: float = 80.0
+    curvature_limit_deg: float = 15.0  # Max curvature per step
+    termination_rule: str = "radius_or_order"  # "radius_or_order", "radius_only", "order_only"
+    allowed_vessel_types: List[str] = field(default_factory=lambda: ["arterial", "venous"])
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            "min_radius": self.min_radius,
+            "max_radius": self.max_radius,
+            "max_branch_order": self.max_branch_order,
+            "min_segment_length": self.min_segment_length,
+            "max_segment_length": self.max_segment_length,
+            "max_branch_angle_deg": self.max_branch_angle_deg,
+            "curvature_limit_deg": self.curvature_limit_deg,
+            "termination_rule": self.termination_rule,
+            "allowed_vessel_types": self.allowed_vessel_types,
+        }
+    
+    @classmethod
+    def from_dict(cls, d: dict) -> "BranchingConstraints":
+        """Create from dictionary."""
+        return cls(
+            min_radius=d.get("min_radius", 0.0003),
+            max_radius=d.get("max_radius", 0.01),
+            max_branch_order=d.get("max_branch_order", 12),
+            min_segment_length=d.get("min_segment_length", 0.001),
+            max_segment_length=d.get("max_segment_length", 0.05),
+            max_branch_angle_deg=d.get("max_branch_angle_deg", 80.0),
+            curvature_limit_deg=d.get("curvature_limit_deg", 15.0),
+            termination_rule=d.get("termination_rule", "radius_or_order"),
+            allowed_vessel_types=d.get("allowed_vessel_types", ["arterial", "venous"]),
+        )
+
+
+@dataclass
+class RadiusRuleSpec:
+    """
+    Specification for radius calculation rules.
+    
+    Defines how radii are computed at bifurcations and along segments.
+    """
+    
+    kind: Literal["murray", "fixed", "linear_taper"]
+    params: Dict = field(default_factory=dict)
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            "kind": self.kind,
+            "params": self.params,
+        }
+    
+    @classmethod
+    def from_dict(cls, d: dict) -> "RadiusRuleSpec":
+        """Create from dictionary."""
+        return cls(
+            kind=d["kind"],
+            params=d.get("params", {}),
+        )
+    
+    @classmethod
+    def murray(cls, gamma: float = 3.0, split_ratio_mean: float = 0.6, split_ratio_std: float = 0.1) -> "RadiusRuleSpec":
+        """Create Murray's law rule."""
+        return cls(
+            kind="murray",
+            params={
+                "gamma": gamma,
+                "split_ratio_mean": split_ratio_mean,
+                "split_ratio_std": split_ratio_std,
+            },
+        )
+    
+    @classmethod
+    def fixed(cls, radius: float) -> "RadiusRuleSpec":
+        """Create fixed radius rule."""
+        return cls(
+            kind="fixed",
+            params={"radius": radius},
+        )
+    
+    @classmethod
+    def linear_taper(cls, taper_factor: float = 0.9) -> "RadiusRuleSpec":
+        """Create linear taper rule."""
+        return cls(
+            kind="linear_taper",
+            params={"taper_factor": taper_factor},
+        )
+
+
+@dataclass
+class InteractionRuleSpec:
+    """
+    Rules for interaction between different vessel types.
+    
+    Controls collision avoidance and connections between arterial/venous trees.
+    """
+    
+    min_distance_between_types: Dict[tuple, float] = field(default_factory=dict)
+    anastomosis_allowed: Dict[tuple, bool] = field(default_factory=dict)
+    parallel_preference: Dict[tuple, float] = field(default_factory=dict)
+    
+    def __post_init__(self):
+        """Set default values."""
+        if not self.min_distance_between_types:
+            self.min_distance_between_types = {
+                ("arterial", "venous"): 0.001,  # 1 mm minimum clearance
+                ("arterial", "arterial"): 0.0005,  # 0.5 mm within same type
+                ("venous", "venous"): 0.0005,
+            }
+        
+        if not self.anastomosis_allowed:
+            self.anastomosis_allowed = {
+                ("arterial", "venous"): True,  # Capillary connections allowed
+                ("arterial", "arterial"): False,
+                ("venous", "venous"): False,
+            }
+    
+    def get_min_distance(self, type1: str, type2: str) -> float:
+        """Get minimum distance between two vessel types."""
+        key = tuple(sorted([type1, type2]))
+        return self.min_distance_between_types.get(key, 0.001)
+    
+    def is_anastomosis_allowed(self, type1: str, type2: str) -> bool:
+        """Check if anastomosis is allowed between two vessel types."""
+        key = tuple(sorted([type1, type2]))
+        return self.anastomosis_allowed.get(key, False)
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            "min_distance_between_types": {
+                f"{k[0]}-{k[1]}": v for k, v in self.min_distance_between_types.items()
+            },
+            "anastomosis_allowed": {
+                f"{k[0]}-{k[1]}": v for k, v in self.anastomosis_allowed.items()
+            },
+            "parallel_preference": {
+                f"{k[0]}-{k[1]}": v for k, v in self.parallel_preference.items()
+            },
+        }
+    
+    @classmethod
+    def from_dict(cls, d: dict) -> "InteractionRuleSpec":
+        """Create from dictionary."""
+        min_dist = {}
+        for key_str, val in d.get("min_distance_between_types", {}).items():
+            types = tuple(key_str.split("-"))
+            min_dist[types] = val
+        
+        anastomosis = {}
+        for key_str, val in d.get("anastomosis_allowed", {}).items():
+            types = tuple(key_str.split("-"))
+            anastomosis[types] = val
+        
+        parallel = {}
+        for key_str, val in d.get("parallel_preference", {}).items():
+            types = tuple(key_str.split("-"))
+            parallel[types] = val
+        
+        return cls(
+            min_distance_between_types=min_dist,
+            anastomosis_allowed=anastomosis,
+            parallel_preference=parallel,
+        )
