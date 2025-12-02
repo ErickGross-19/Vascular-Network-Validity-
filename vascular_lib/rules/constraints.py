@@ -184,3 +184,119 @@ class InteractionRuleSpec:
             anastomosis_allowed=anastomosis,
             parallel_preference=parallel,
         )
+
+
+@dataclass
+class DegradationRuleSpec:
+    """
+    Rules for radius degradation as branches split.
+    
+    Controls how vessel radii decrease through successive generations,
+    modeling the tapering of vascular trees from large vessels to capillaries.
+    """
+    
+    model: Literal["exponential", "linear", "generation_based", "none"] = "exponential"
+    degradation_factor: float = 0.85
+    min_terminal_radius: float = 0.0001
+    max_generation: Optional[int] = None
+    
+    def __post_init__(self):
+        """Validate parameters."""
+        if self.degradation_factor <= 0 or self.degradation_factor >= 1:
+            raise ValueError(f"degradation_factor must be in (0, 1), got {self.degradation_factor}")
+        if self.min_terminal_radius <= 0:
+            raise ValueError(f"min_terminal_radius must be positive, got {self.min_terminal_radius}")
+    
+    def apply_degradation(self, parent_radius: float, generation: int) -> float:
+        """
+        Apply degradation to compute child radius.
+        
+        Parameters
+        ----------
+        parent_radius : float
+            Parent vessel radius
+        generation : int
+            Current generation number (0 = root)
+        
+        Returns
+        -------
+        child_radius : float
+            Degraded radius for child vessel
+        """
+        if self.model == "none":
+            return parent_radius
+        
+        elif self.model == "exponential":
+            child_radius = parent_radius * (self.degradation_factor ** generation)
+        
+        elif self.model == "linear":
+            decay = 1.0 - (1.0 - self.degradation_factor) * generation
+            child_radius = parent_radius * max(decay, 0.1)
+        
+        elif self.model == "generation_based":
+            child_radius = parent_radius * self.degradation_factor
+        
+        else:
+            raise ValueError(f"Unknown degradation model: {self.model}")
+        
+        return max(child_radius, self.min_terminal_radius)
+    
+    def should_terminate(self, radius: float, generation: int) -> tuple[bool, Optional[str]]:
+        """
+        Check if branch should terminate based on degradation rules.
+        
+        Parameters
+        ----------
+        radius : float
+            Current vessel radius
+        generation : int
+            Current generation number
+        
+        Returns
+        -------
+        should_terminate : bool
+            True if branch should terminate
+        reason : str or None
+            Reason for termination if applicable
+        """
+        if radius <= self.min_terminal_radius:
+            return True, f"Radius {radius:.6f}m at or below minimum {self.min_terminal_radius:.6f}m"
+        
+        if self.max_generation is not None and generation >= self.max_generation:
+            return True, f"Generation {generation} reached maximum {self.max_generation}"
+        
+        return False, None
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary for serialization."""
+        return {
+            "model": self.model,
+            "degradation_factor": self.degradation_factor,
+            "min_terminal_radius": self.min_terminal_radius,
+            "max_generation": self.max_generation,
+        }
+    
+    @classmethod
+    def from_dict(cls, d: dict) -> "DegradationRuleSpec":
+        """Create from dictionary."""
+        return cls(
+            model=d.get("model", "exponential"),
+            degradation_factor=d.get("degradation_factor", 0.85),
+            min_terminal_radius=d.get("min_terminal_radius", 0.0001),
+            max_generation=d.get("max_generation"),
+        )
+    
+    @classmethod
+    def exponential(cls, factor: float = 0.85, min_radius: float = 0.0001) -> "DegradationRuleSpec":
+        """Create exponential degradation rule."""
+        return cls(model="exponential", degradation_factor=factor, min_terminal_radius=min_radius)
+    
+    @classmethod
+    def linear(cls, factor: float = 0.85, min_radius: float = 0.0001) -> "DegradationRuleSpec":
+        """Create linear degradation rule."""
+        return cls(model="linear", degradation_factor=factor, min_terminal_radius=min_radius)
+    
+    @classmethod
+    def generation_based(cls, factor: float = 0.85, max_gen: int = 12) -> "DegradationRuleSpec":
+        """Create generation-based degradation rule."""
+        return cls(model="generation_based", degradation_factor=factor, max_generation=max_gen)
