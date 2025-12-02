@@ -48,14 +48,14 @@ def to_trimesh(
         
         for seg_id, segment in network.segments.items():
             start = np.array([
-                segment.geometry.start_point.x,
-                segment.geometry.start_point.y,
-                segment.geometry.start_point.z,
+                segment.geometry.start.x,
+                segment.geometry.start.y,
+                segment.geometry.start.z,
             ])
             end = np.array([
-                segment.geometry.end_point.x,
-                segment.geometry.end_point.y,
-                segment.geometry.end_point.z,
+                segment.geometry.end.x,
+                segment.geometry.end.y,
+                segment.geometry.end.z,
             ])
             
             length = np.linalg.norm(end - start)

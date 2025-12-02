@@ -155,14 +155,14 @@ def _repair_by_reroute(
             )
             
             start_pos = np.array([
-                segment.geometry.start_point.x,
-                segment.geometry.start_point.y,
-                segment.geometry.start_point.z,
+                segment.geometry.start.x,
+                segment.geometry.start.y,
+                segment.geometry.start.z,
             ])
             length = np.linalg.norm(np.array([
-                segment.geometry.end_point.x - segment.geometry.start_point.x,
-                segment.geometry.end_point.y - segment.geometry.start_point.y,
-                segment.geometry.end_point.z - segment.geometry.start_point.z,
+                segment.geometry.end.x - segment.geometry.start.x,
+                segment.geometry.end.y - segment.geometry.start.y,
+                segment.geometry.end.z - segment.geometry.start.z,
             ]))
             
             new_end = start_pos + candidate_direction.to_array() * length
@@ -185,19 +185,19 @@ def _repair_by_reroute(
         
         if best_direction and best_clearance >= min_clearance:
             start_pos = np.array([
-                segment.geometry.start_point.x,
-                segment.geometry.start_point.y,
-                segment.geometry.start_point.z,
+                segment.geometry.start.x,
+                segment.geometry.start.y,
+                segment.geometry.start.z,
             ])
             length = np.linalg.norm(np.array([
-                segment.geometry.end_point.x - segment.geometry.start_point.x,
-                segment.geometry.end_point.y - segment.geometry.start_point.y,
-                segment.geometry.end_point.z - segment.geometry.start_point.z,
+                segment.geometry.end.x - segment.geometry.start.x,
+                segment.geometry.end.y - segment.geometry.start.y,
+                segment.geometry.end.z - segment.geometry.start.z,
             ]))
             new_end = start_pos + best_direction.to_array() * length
             
             old_segment_dict = segment.to_dict()
-            segment.geometry.end_point = Point3D(x=new_end[0], y=new_end[1], z=new_end[2])
+            segment.geometry.end = Point3D(x=new_end[0], y=new_end[1], z=new_end[2])
             
             delta.modified_segments[seg_id] = old_segment_dict
             
@@ -383,14 +383,14 @@ def _repair_by_terminate(
 def _compute_direction(segment: VesselSegment) -> Direction3D:
     """Compute direction vector from segment."""
     start = np.array([
-        segment.geometry.start_point.x,
-        segment.geometry.start_point.y,
-        segment.geometry.start_point.z,
+        segment.geometry.start.x,
+        segment.geometry.start.y,
+        segment.geometry.start.z,
     ])
     end = np.array([
-        segment.geometry.end_point.x,
-        segment.geometry.end_point.y,
-        segment.geometry.end_point.z,
+        segment.geometry.end.x,
+        segment.geometry.end.y,
+        segment.geometry.end.z,
     ])
     direction = end - start
     length = np.linalg.norm(direction)

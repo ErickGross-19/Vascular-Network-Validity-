@@ -61,14 +61,14 @@ def to_networkx_graph(network: VascularNetwork) -> Tuple[nx.Graph, Dict[int, int
         end_nx = node_id_map[segment.end_node_id]
         
         start_pos = np.array([
-            segment.geometry.start_point.x,
-            segment.geometry.start_point.y,
-            segment.geometry.start_point.z,
+            segment.geometry.start.x,
+            segment.geometry.start.y,
+            segment.geometry.start.z,
         ])
         end_pos = np.array([
-            segment.geometry.end_point.x,
-            segment.geometry.end_point.y,
-            segment.geometry.end_point.z,
+            segment.geometry.end.x,
+            segment.geometry.end.y,
+            segment.geometry.end.z,
         ])
         length = float(np.linalg.norm(end_pos - start_pos))
         
@@ -156,8 +156,8 @@ def from_networkx_graph(
             start_node_id=u_vascular,
             end_node_id=v_vascular,
             geometry=TubeGeometry(
-                start_point=u_node.position,
-                end_point=v_node.position,
+                start=u_node.position,
+                end=v_node.position,
                 radius_start=radius,
                 radius_end=radius,
             ),
