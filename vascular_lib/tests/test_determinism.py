@@ -31,7 +31,7 @@ def test_deterministic_ids():
         radius=0.005,
     )
     
-    assert result1.new_ids["node_id"] == result2.new_ids["node_id"]
+    assert result1.new_ids["node"] == result2.new_ids["node"]
 
 
 def test_space_colonization_determinism():

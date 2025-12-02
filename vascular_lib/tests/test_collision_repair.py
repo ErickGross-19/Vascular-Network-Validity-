@@ -33,7 +33,7 @@ def test_collision_detection():
     
     grow_branch(
         network,
-        from_node_id=inlet1_result.new_ids["node_id"],
+        from_node_id=inlet1_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
@@ -41,7 +41,7 @@ def test_collision_detection():
     
     grow_branch(
         network,
-        from_node_id=inlet2_result.new_ids["node_id"],
+        from_node_id=inlet2_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
@@ -74,7 +74,7 @@ def test_repair_by_shrink():
     
     seg1_result = grow_branch(
         network,
-        from_node_id=inlet1_result.new_ids["node_id"],
+        from_node_id=inlet1_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
@@ -82,13 +82,13 @@ def test_repair_by_shrink():
     
     seg2_result = grow_branch(
         network,
-        from_node_id=inlet2_result.new_ids["node_id"],
+        from_node_id=inlet2_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
-    seg1 = network.segments[seg1_result.new_ids["segment_id"]]
+    seg1 = network.segments[seg1_result.new_ids["segment"]]
     initial_radius = seg1.geometry.radius_start
     
     repair_result = avoid_collisions(network, min_clearance=0.001, repair_strategy="shrink")
@@ -118,7 +118,7 @@ def test_repair_by_terminate():
     
     seg1_result = grow_branch(
         network,
-        from_node_id=inlet1_result.new_ids["node_id"],
+        from_node_id=inlet1_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
@@ -126,13 +126,13 @@ def test_repair_by_terminate():
     
     seg2_result = grow_branch(
         network,
-        from_node_id=inlet2_result.new_ids["node_id"],
+        from_node_id=inlet2_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
-    node1 = network.nodes[seg1_result.new_ids["node_id"]]
+    node1 = network.nodes[seg1_result.new_ids["node"]]
     initial_type = node1.node_type
     
     repair_result = avoid_collisions(network, min_clearance=0.001, repair_strategy="terminate")
@@ -164,7 +164,7 @@ def test_no_collisions():
     
     grow_branch(
         network,
-        from_node_id=inlet1_result.new_ids["node_id"],
+        from_node_id=inlet1_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.003,
@@ -172,7 +172,7 @@ def test_no_collisions():
     
     grow_branch(
         network,
-        from_node_id=inlet2_result.new_ids["node_id"],
+        from_node_id=inlet2_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.003,

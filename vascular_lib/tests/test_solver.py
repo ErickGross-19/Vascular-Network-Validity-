@@ -26,13 +26,13 @@ def test_solve_flow_simple():
     
     grow_result = grow_branch(
         network,
-        from_node_id=inlet_result.new_ids["node_id"],
+        from_node_id=inlet_result.new_ids["node"],
         length=0.08,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
-    end_node = network.nodes[grow_result.new_ids["node_id"]]
+    end_node = network.nodes[grow_result.new_ids["node"]]
     end_node.node_type = "outlet"
     
     result = solve_flow(
@@ -64,7 +64,7 @@ def test_solve_flow_bifurcation():
     
     trunk_result = grow_branch(
         network,
-        from_node_id=inlet_result.new_ids["node_id"],
+        from_node_id=inlet_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
@@ -72,7 +72,7 @@ def test_solve_flow_bifurcation():
     
     bifurc_result = bifurcate(
         network,
-        at_node_id=trunk_result.new_ids["node_id"],
+        at_node_id=trunk_result.new_ids["node"],
         child_lengths=[0.03, 0.03],
         child_directions=[
             Direction3D(dx=0.7, dy=0.7, dz=0),
@@ -81,7 +81,7 @@ def test_solve_flow_bifurcation():
         radius_rule="murray",
     )
     
-    for child_id in bifurc_result.new_ids["child_node_ids"]:
+    for child_id in bifurc_result.new_ids["child_nodes"]:
         network.nodes[child_id].node_type = "outlet"
     
     result = solve_flow(network, pin=13000.0, pout=2000.0)
@@ -109,7 +109,7 @@ def test_flow_conservation():
     
     trunk_result = grow_branch(
         network,
-        from_node_id=inlet_result.new_ids["node_id"],
+        from_node_id=inlet_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
@@ -117,7 +117,7 @@ def test_flow_conservation():
     
     bifurc_result = bifurcate(
         network,
-        at_node_id=trunk_result.new_ids["node_id"],
+        at_node_id=trunk_result.new_ids["node"],
         child_lengths=[0.03, 0.03],
         child_directions=[
             Direction3D(dx=0.7, dy=0.7, dz=0),
@@ -126,7 +126,7 @@ def test_flow_conservation():
         radius_rule="murray",
     )
     
-    for child_id in bifurc_result.new_ids["child_node_ids"]:
+    for child_id in bifurc_result.new_ids["child_nodes"]:
         network.nodes[child_id].node_type = "outlet"
     
     solve_result = solve_flow(network)
@@ -152,20 +152,20 @@ def test_pressure_monotonicity():
     
     grow_result = grow_branch(
         network,
-        from_node_id=inlet_result.new_ids["node_id"],
+        from_node_id=inlet_result.new_ids["node"],
         length=0.08,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
-    end_node = network.nodes[grow_result.new_ids["node_id"]]
+    end_node = network.nodes[grow_result.new_ids["node"]]
     end_node.node_type = "outlet"
     
     # Solve
     solve_flow(network, pin=13000.0, pout=2000.0)
     
-    inlet_node = network.nodes[inlet_result.new_ids["node_id"]]
-    outlet_node = network.nodes[grow_result.new_ids["node_id"]]
+    inlet_node = network.nodes[inlet_result.new_ids["node"]]
+    outlet_node = network.nodes[grow_result.new_ids["node"]]
     
     p_inlet = inlet_node.attributes.get('pressure', 0)
     p_outlet = outlet_node.attributes.get('pressure', 0)

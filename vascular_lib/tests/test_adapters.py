@@ -36,7 +36,7 @@ def test_to_networkx_graph():
     
     grow_result = grow_branch(
         network,
-        from_node_id=inlet_result.new_ids["node_id"],
+        from_node_id=inlet_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.004,
@@ -82,7 +82,7 @@ def test_to_trimesh_fast():
     
     grow_branch(
         network,
-        from_node_id=inlet_result.new_ids["node_id"],
+        from_node_id=inlet_result.new_ids["node"],
         length=0.03,
         direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.004,
