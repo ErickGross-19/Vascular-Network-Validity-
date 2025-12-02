@@ -20,14 +20,14 @@ def test_collision_detection():
     inlet1_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
     inlet2_result = add_inlet(
         network,
         position=(0, 0.008, 0),  # 8mm apart, but radii are 5mm each
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -35,7 +35,7 @@ def test_collision_detection():
         network,
         from_node_id=inlet1_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -43,7 +43,7 @@ def test_collision_detection():
         network,
         from_node_id=inlet2_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -61,14 +61,14 @@ def test_repair_by_shrink():
     inlet1_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
     inlet2_result = add_inlet(
         network,
         position=(0, 0.008, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -76,7 +76,7 @@ def test_repair_by_shrink():
         network,
         from_node_id=inlet1_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -84,7 +84,7 @@ def test_repair_by_shrink():
         network,
         from_node_id=inlet2_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -105,14 +105,14 @@ def test_repair_by_terminate():
     inlet1_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
     inlet2_result = add_inlet(
         network,
         position=(0, 0.008, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -120,7 +120,7 @@ def test_repair_by_terminate():
         network,
         from_node_id=inlet1_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -128,7 +128,7 @@ def test_repair_by_terminate():
         network,
         from_node_id=inlet2_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -151,14 +151,14 @@ def test_no_collisions():
     inlet1_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.003,
     )
     
     inlet2_result = add_inlet(
         network,
         position=(0, 0.05, 0),  # 50mm apart
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.003,
     )
     
@@ -166,7 +166,7 @@ def test_no_collisions():
         network,
         from_node_id=inlet1_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.003,
     )
     
@@ -174,7 +174,7 @@ def test_no_collisions():
         network,
         from_node_id=inlet2_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.003,
     )
     

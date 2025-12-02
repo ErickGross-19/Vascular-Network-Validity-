@@ -21,7 +21,7 @@ def test_to_networkx_graph():
     inlet_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
         vessel_type="arterial",
     )
@@ -29,7 +29,7 @@ def test_to_networkx_graph():
     outlet_result = add_outlet(
         network,
         position=(0.08, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.006,
         vessel_type="venous",
     )
@@ -38,7 +38,7 @@ def test_to_networkx_graph():
         network,
         from_node_id=inlet_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.004,
     )
     
@@ -58,8 +58,8 @@ def test_networkx_roundtrip():
     domain = EllipsoidDomain(semi_axis_a=0.1, semi_axis_b=0.1, semi_axis_c=0.1)
     network1 = create_network(domain)
     
-    add_inlet(network1, position=(0, 0, 0), direction=Direction3D(x=1, y=0, z=0), radius=0.005)
-    add_outlet(network1, position=(0.08, 0, 0), direction=Direction3D(x=1, y=0, z=0), radius=0.006)
+    add_inlet(network1, position=(0, 0, 0), direction=Direction3D(dx=1, dy=0, dz=0), radius=0.005)
+    add_outlet(network1, position=(0.08, 0, 0), direction=Direction3D(dx=1, dy=0, dz=0), radius=0.006)
     
     G, node_id_map = to_networkx_graph(network1)
     network2 = from_networkx_graph(G, domain, node_id_map)
@@ -76,7 +76,7 @@ def test_to_trimesh_fast():
     inlet_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -84,7 +84,7 @@ def test_to_trimesh_fast():
         network,
         from_node_id=inlet_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.004,
     )
     
@@ -108,7 +108,7 @@ def test_serialization_json_safe():
     inlet_result = add_inlet(
         network,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     

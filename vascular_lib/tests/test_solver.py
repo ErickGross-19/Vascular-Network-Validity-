@@ -20,7 +20,7 @@ def test_solve_flow_simple():
     inlet_result = add_inlet(
         network,
         position=(-0.05, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -28,7 +28,7 @@ def test_solve_flow_simple():
         network,
         from_node_id=inlet_result.new_ids["node_id"],
         length=0.08,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -58,7 +58,7 @@ def test_solve_flow_bifurcation():
     inlet_result = add_inlet(
         network,
         position=(-0.05, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -66,7 +66,7 @@ def test_solve_flow_bifurcation():
         network,
         from_node_id=inlet_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -75,8 +75,8 @@ def test_solve_flow_bifurcation():
         at_node_id=trunk_result.new_ids["node_id"],
         child_lengths=[0.03, 0.03],
         child_directions=[
-            Direction3D(x=0.7, y=0.7, z=0),
-            Direction3D(x=0.7, y=-0.7, z=0),
+            Direction3D(dx=0.7, dy=0.7, dz=0),
+            Direction3D(dx=0.7, dy=-0.7, dz=0),
         ],
         radius_rule="murray",
     )
@@ -103,7 +103,7 @@ def test_flow_conservation():
     inlet_result = add_inlet(
         network,
         position=(-0.05, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -111,7 +111,7 @@ def test_flow_conservation():
         network,
         from_node_id=inlet_result.new_ids["node_id"],
         length=0.03,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     
@@ -120,8 +120,8 @@ def test_flow_conservation():
         at_node_id=trunk_result.new_ids["node_id"],
         child_lengths=[0.03, 0.03],
         child_directions=[
-            Direction3D(x=0.7, y=0.7, z=0),
-            Direction3D(x=0.7, y=-0.7, z=0),
+            Direction3D(dx=0.7, dy=0.7, dz=0),
+            Direction3D(dx=0.7, dy=-0.7, dz=0),
         ],
         radius_rule="murray",
     )
@@ -146,7 +146,7 @@ def test_pressure_monotonicity():
     inlet_result = add_inlet(
         network,
         position=(-0.05, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -154,7 +154,7 @@ def test_pressure_monotonicity():
         network,
         from_node_id=inlet_result.new_ids["node_id"],
         length=0.08,
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         target_radius=0.005,
     )
     

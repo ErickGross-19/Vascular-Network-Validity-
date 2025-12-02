@@ -20,14 +20,14 @@ def test_deterministic_ids():
     result1 = add_inlet(
         network1,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
     result2 = add_inlet(
         network2,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
@@ -45,7 +45,7 @@ def test_space_colonization_determinism():
     inlet1 = add_inlet(
         network1,
         position=(-0.08, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
         vessel_type="arterial",
     )
@@ -64,7 +64,7 @@ def test_space_colonization_determinism():
     inlet2 = add_inlet(
         network2,
         position=(-0.08, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
         vessel_type="arterial",
     )
@@ -83,7 +83,7 @@ def test_serialization_roundtrip():
     add_inlet(
         network1,
         position=(0, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, dy=0, dz=0),
         radius=0.005,
     )
     
