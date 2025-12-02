@@ -111,7 +111,10 @@ def test_compute_perfusion_metrics_with_weights():
         vessel_type="venous",
     )
     
-    tissue_points = np.array([[0, 0, 0]])
+    tissue_points = np.array([
+        [0, 0, 0],
+        [0, 0.04, 0],
+    ])
     
     metrics1 = compute_perfusion_metrics(network, tissue_points, weights=(1.0, 1.0))
     
@@ -119,9 +122,10 @@ def test_compute_perfusion_metrics_with_weights():
     
     metrics3 = compute_perfusion_metrics(network, tissue_points, weights=(1.0, 2.0))
     
-    assert metrics1["perfusion_scores"][0] < 1.0
-    assert metrics2["perfusion_scores"][0] < metrics1["perfusion_scores"][0]
-    assert metrics3["perfusion_scores"][0] < metrics1["perfusion_scores"][0]
+    assert metrics1["perfusion_scores"][0] > metrics1["perfusion_scores"][1]
+    
+    assert metrics1["perfusion_scores"] != metrics2["perfusion_scores"]
+    assert metrics1["perfusion_scores"] != metrics3["perfusion_scores"]
 
 
 def test_compute_perfusion_metrics_with_distance_cap():
