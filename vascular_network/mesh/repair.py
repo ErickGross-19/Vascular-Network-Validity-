@@ -59,6 +59,20 @@ def voxel_remesh_and_smooth(
       7) Taubin or Laplacian smoothing.
     """
     mesh = mesh.copy()
+    
+    extents = mesh.bounding_box.extents.astype(float)
+    Lmax = float(np.max(extents))
+    
+    target_grid_resolution = 256
+    recommended_pitch = Lmax / target_grid_resolution
+    
+    if pitch > recommended_pitch * 2:
+        print(
+            f"[voxel_remesh_and_smooth] WARNING: voxel_pitch={pitch:.4g} is too coarse "
+            f"for mesh size (Lmax={Lmax:.4g}). Recommended pitch: {recommended_pitch:.4g}. "
+            f"Automatically reducing pitch to prevent geometry loss."
+        )
+        pitch = recommended_pitch
 
     pitch_eff = auto_adjust_voxel_pitch(
         mesh, requested_pitch=pitch, max_voxels=max_voxels
@@ -86,6 +100,12 @@ def voxel_remesh_and_smooth(
         raise RuntimeError(
             "Voxelization produced an empty fluid mask. Check pitch/scale."
         )
+    
+    total_voxels = fluid_mask.size
+    initial_filled = np.count_nonzero(fluid_mask)
+    filled_fraction = initial_filled / total_voxels
+    
+    print(f"[voxel_remesh_and_smooth] Initial voxelization: {initial_filled} voxels ({filled_fraction:.2%})")
 
     structure = ndimage.generate_binary_structure(3, 1)
     labels, num_labels = ndimage.label(fluid_mask, structure=structure)
@@ -93,20 +113,42 @@ def voxel_remesh_and_smooth(
         sizes = ndimage.sum(fluid_mask, labels, index=range(1, num_labels + 1))
         largest_label = 1 + int(np.argmax(sizes))
         fluid_mask = labels == largest_label
+        after_component = np.count_nonzero(fluid_mask)
+        print(f"[voxel_remesh_and_smooth] After keeping largest component: {after_component} voxels")
 
     if closing_iters > 0:
         fluid_mask = ndimage.binary_closing(fluid_mask, iterations=closing_iters)
+        after_closing = np.count_nonzero(fluid_mask)
+        print(f"[voxel_remesh_and_smooth] After closing: {after_closing} voxels")
 
     if opening_iters > 0:
         fluid_mask = ndimage.binary_opening(fluid_mask, iterations=opening_iters)
+        after_opening = np.count_nonzero(fluid_mask)
+        print(f"[voxel_remesh_and_smooth] After opening: {after_opening} voxels")
+        
+        if after_opening == 0:
+            print(
+                f"[voxel_remesh_and_smooth] WARNING: Opening removed all voxels. "
+                f"Skipping opening and reducing dilation."
+            )
+            fluid_mask = ndimage.binary_closing(fluid_mask, iterations=closing_iters)
+            dilation_iters = max(0, dilation_iters - 1)
 
     if dilation_iters > 0:
         fluid_mask = ndimage.binary_dilation(fluid_mask, iterations=dilation_iters)
+        after_dilation = np.count_nonzero(fluid_mask)
+        print(f"[voxel_remesh_and_smooth] After dilation: {after_dilation} voxels")
 
     volume_uint8 = fluid_mask.astype(np.uint8)
     if volume_uint8.max() == 0:
         raise RuntimeError(
-            "All voxels were removed after morphology; nothing left to remesh."
+            f"All voxels were removed after morphology; nothing left to remesh.\n"
+            f"Mesh bounding box: {extents}\n"
+            f"Voxel pitch used: {pitch_eff:.6g}\n"
+            f"Grid resolution: {Lmax/pitch_eff:.1f} voxels along longest axis\n"
+            f"Initial filled voxels: {initial_filled}\n"
+            f"Suggestion: Reduce voxel_pitch to {recommended_pitch:.6g} or smaller, "
+            f"and/or reduce opening_iters and dilation_iters."
         )
 
     verts, faces, _, _ = marching_cubes(
