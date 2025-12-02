@@ -97,7 +97,7 @@ def test_compute_perfusion_metrics_with_weights():
     
     add_inlet(
         network,
-        position=(-0.01, 0, 0),
+        position=(-0.005, 0, 0),
         direction=(1, 0, 0),
         radius=0.005,
         vessel_type="arterial",
@@ -105,7 +105,7 @@ def test_compute_perfusion_metrics_with_weights():
     
     add_outlet(
         network,
-        position=(0.01, 0, 0),
+        position=(0.015, 0, 0),
         direction=(-1, 0, 0),
         radius=0.005,
         vessel_type="venous",
@@ -117,7 +117,10 @@ def test_compute_perfusion_metrics_with_weights():
     
     metrics2 = compute_perfusion_metrics(network, tissue_points, weights=(2.0, 1.0))
     
-    assert metrics1["perfusion_scores"][0] != metrics2["perfusion_scores"][0]
+    metrics3 = compute_perfusion_metrics(network, tissue_points, weights=(1.0, 2.0))
+    
+    assert metrics2["perfusion_scores"][0] < metrics1["perfusion_scores"][0]
+    assert metrics3["perfusion_scores"][0] < metrics1["perfusion_scores"][0]
 
 
 def test_compute_perfusion_metrics_with_distance_cap():
