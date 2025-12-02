@@ -14,7 +14,7 @@ from vascular_lib.analysis.solver import solve_flow, check_flow_plausibility
 from vascular_lib.adapters.mesh_adapter import export_stl
 from vascular_lib.adapters.report_adapter import make_full_report
 from vascular_lib.io.serialize import save_json
-from vascular_lib.core.types import Direction3D
+from vascular_lib.core.types import Direction3D, Point3D
 
 
 def main():
@@ -40,13 +40,13 @@ def main():
         seed=42,
     )
     
-    print(f"   Domain: {domain.semi_axes} m")
+    print(f"   Domain: {(domain.semi_axis_a, domain.semi_axis_b, domain.semi_axis_c)} m")
     
     print("\n[2/8] Adding inlet and outlet nodes...")
     inlet_result = add_inlet(
         network,
         position=(-0.10, 0, 0),
-        direction=Direction3D(x=1, y=0, z=0),
+        direction=Direction3D(dx=1, y=0, z=0),
         radius=0.005,  # 5mm arterial inlet
         vessel_type="arterial",
     )
@@ -54,13 +54,13 @@ def main():
     outlet_result = add_outlet(
         network,
         position=(0.10, 0, 0),
-        direction=Direction3D(x=-1, y=0, z=0),
+        direction=Direction3D(dx=-1, y=0, z=0),
         radius=0.006,  # 6mm venous outlet
         vessel_type="venous",
     )
     
-    print(f"   Inlet node: {inlet_result.new_ids['node_id']}")
-    print(f"   Outlet node: {outlet_result.new_ids['node_id']}")
+    print(f"   Inlet node: {inlet_result.new_ids["node"]}")
+    print(f"   Outlet node: {outlet_result.new_ids["node"]}")
     
     print("\n[3/8] Growing arterial tree with space colonization...")
     
@@ -70,7 +70,7 @@ def main():
         x = np.random.uniform(-0.08, 0.02)
         y = np.random.uniform(-0.08, 0.08)
         z = np.random.uniform(-0.06, 0.06)
-        if domain.contains_point((x, y, z)):
+        if domain.contains(Point3D(x, y, z)):
             tissue_points.append([x, y, z])
     tissue_points = np.array(tissue_points)
     
@@ -102,7 +102,7 @@ def main():
         x = np.random.uniform(-0.02, 0.08)
         y = np.random.uniform(-0.08, 0.08)
         z = np.random.uniform(-0.06, 0.06)
-        if domain.contains_point((x, y, z)):
+        if domain.contains(Point3D(x, y, z)):
             venous_tissue.append([x, y, z])
     venous_tissue = np.array(venous_tissue)
     
