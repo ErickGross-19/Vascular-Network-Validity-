@@ -98,12 +98,25 @@ save_json(network, "my_network.json")
 - `get_leaf_nodes()` - Find terminal nodes
 - `get_paths_from_inlet()` - Trace paths through network
 - `compute_coverage()` - Tissue perfusion analysis
-- `estimate_flows()` - Hemodynamic flow estimation
+- `estimate_flows()` - Hemodynamic flow estimation (simplified)
+- `solve_flow()` - Full network flow solver using scipy.sparse
+- `check_flow_plausibility()` - Validate hemodynamic plausibility
 - `check_hemodynamic_plausibility()` - Validate biophysical rules
 
 **Collision:**
 - `get_collisions()` - Find segment collisions
-- `avoid_collisions()` - Collision detection/repair
+- `avoid_collisions()` - Collision detection/repair with strategies:
+  - `"report"` - Just report collisions
+  - `"reroute"` - Attempt to reroute branches (cone search)
+  - `"shrink"` - Reduce radius/length
+  - `"terminate"` - Mark branches as terminal
+
+**Export & Integration:**
+- `to_trimesh()` - Export to STL mesh (fast/robust modes)
+- `export_stl()` - Export to STL file with repair
+- `to_networkx_graph()` - Convert to NetworkX for analysis
+- `from_networkx_graph()` - Convert from NetworkX
+- `make_full_report()` - Comprehensive LLM-friendly report
 
 **I/O:**
 - `save_json()` - Save network to JSON
@@ -158,6 +171,8 @@ warnings = check_hemodynamic_plausibility(network)
 
 ## Examples
 
+### LLM Design Loop
+
 See `vascular_lib/examples/llm_design_loop.py` for complete examples:
 
 ```bash
@@ -173,6 +188,24 @@ Examples include:
 6. Serialization
 7. Query operations
 
+### Full Pipeline
+
+See `vascular_lib/examples/full_pipeline.py` for end-to-end workflow:
+
+```bash
+python -m vascular_lib.examples.full_pipeline
+```
+
+Pipeline demonstrates:
+1. Create domain and network
+2. Add inlet/outlet nodes
+3. Grow arterial tree with space colonization
+4. Grow venous tree
+5. Check and repair collisions
+6. Solve hemodynamics with full solver
+7. Export STL mesh with repair
+8. Generate comprehensive report
+
 ## Architecture
 
 ```
@@ -181,8 +214,10 @@ vascular_lib/
 ├── rules/          # Constraints and biophysical rules
 ├── spatial/        # Spatial indexing for collision detection
 ├── ops/            # Operations (build, growth, collision, space_colonization)
-├── analysis/       # Query and analysis functions
+├── analysis/       # Query, analysis, and full flow solver
+├── adapters/       # Integration with existing vascular_network package
 ├── io/             # JSON serialization
+├── tests/          # Unit tests
 └── examples/       # Example scripts
 ```
 
@@ -190,10 +225,11 @@ vascular_lib/
 
 1. **Small operations** - Each function does one thing
 2. **Explicit state** - No hidden globals or side effects
-3. **Structured results** - OperationResult with status, IDs, warnings, errors
-4. **Serializability** - Everything has to_dict()/from_dict()
+3. **Structured results** - OperationResult with status, IDs, warnings, errors, error_codes
+4. **Serializability** - Everything has to_dict()/from_dict(), JSON-safe
 5. **Deterministic** - Accept seed/rng, return rng_state
 6. **Reversible** - Delta objects for undo/redo
+7. **LLM-friendly** - Error codes, structured feedback, explicit parameters
 
 ## Biophysical Rules
 
@@ -203,13 +239,27 @@ vascular_lib/
 - **Collision Avoidance** - Minimum clearance between vessels
 - **Domain Constraints** - Growth bounded by organ geometry
 
-## Future Extensions
+## Features
 
-- Advanced collision repair strategies
+### Implemented
+- ✓ Core data model with full JSON serialization
+- ✓ Construction operations (create_network, add_inlet, add_outlet)
+- ✓ Growth operations (grow_branch, bifurcate)
+- ✓ Space colonization for organic growth
+- ✓ Collision detection and repair (reroute, shrink, terminate)
+- ✓ Full network flow solver using scipy.sparse
+- ✓ STL mesh export with repair pipeline
+- ✓ Integration with existing vascular_network package
+- ✓ Comprehensive unit tests
+- ✓ Undo/redo support
+- ✓ Error codes for LLM consumption
+
+### Future Extensions
+- dry_run parameter for all mutating operations
 - Multi-tree anastomosis connections
-- CFD integration for detailed flow
 - Optimization objectives (minimize resistance, maximize coverage)
 - Additional organ-specific rule sets (kidney, lung, brain)
+- Pydantic models for JSON schema validation
 
 ## License
 
