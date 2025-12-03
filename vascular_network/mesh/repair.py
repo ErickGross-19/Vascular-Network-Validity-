@@ -291,3 +291,80 @@ def meshfix_repair(
 
     repaired.remove_unreferenced_vertices()
     return repaired
+
+
+def validate_and_repair_geometry(
+    input_path: str,
+    report_path: str = None,
+    voxel_pitch: float = None,
+    opening_iters: int = 2,
+    dilation_iters: int = 3,
+    smoothing_method: str = "taubin",
+    smoothing_iters: int = 10,
+):
+    """
+    Validate and repair geometry from STL file with auto voxel pitch selection.
+    
+    This is a convenience wrapper around voxel_remesh_and_smooth that:
+    1. Loads the mesh from file
+    2. Auto-selects voxel pitch if not provided (D2: Auto-pitch selection)
+    3. Applies voxel remeshing and smoothing
+    4. Optionally saves a report
+    
+    Parameters
+    ----------
+    input_path : str
+        Path to input STL file
+    report_path : str, optional
+        Path to save report (not implemented yet)
+    voxel_pitch : float, optional
+        Voxel pitch in meters. If None, auto-selects based on mesh size (default: None)
+    opening_iters : int
+        Binary opening iterations (default: 2)
+    dilation_iters : int
+        Binary dilation iterations (default: 3)
+    smoothing_method : str
+        "taubin" or "laplacian" (default: "taubin")
+    smoothing_iters : int
+        Number of smoothing iterations (default: 10)
+        
+    Returns
+    -------
+    mesh : trimesh.Trimesh
+        Repaired mesh
+    report : dict or None
+        Report dictionary (not implemented yet, returns None)
+    """
+    import trimesh
+    import numpy as np
+    
+    # Load mesh
+    mesh_orig = trimesh.load(input_path, force="mesh")
+    
+    # D2: Auto-select voxel pitch if not provided
+    if voxel_pitch is None:
+        extents = mesh_orig.bounding_box.extents.astype(float)
+        Lmax = float(np.max(extents))
+        target_resolution = 256
+        voxel_pitch = Lmax / target_resolution
+        print(f"Auto-selected voxel_pitch = {voxel_pitch:.6f}m for {target_resolution} voxel resolution")
+    
+    # Apply voxel remeshing
+    use_taubin = (smoothing_method.lower() == "taubin")
+    
+    mesh_repaired = voxel_remesh_and_smooth(
+        mesh_orig,
+        pitch=voxel_pitch,
+        smooth_iters=smoothing_iters,
+        use_taubin=use_taubin,
+        dilation_iters=dilation_iters,
+        opening_iters=opening_iters,
+    )
+    
+    # Apply MeshFix for watertightness
+    mesh_final = meshfix_repair(mesh_repaired, keep_largest_component=True)
+    
+    # TODO: Generate report if report_path is provided
+    report = None
+    
+    return mesh_final, report
