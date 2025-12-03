@@ -1,0 +1,208 @@
+"""Parameter presets for common vascular network designs.
+
+This module provides named parameter presets for SpaceColonizationParams
+to make it easier for LLMs to generate appropriate networks for different
+anatomical contexts and use cases.
+"""
+
+from ..ops.space_colonization import SpaceColonizationParams
+
+
+def liver_arterial_dense() -> SpaceColonizationParams:
+    """
+    Dense arterial tree for liver lobe.
+    
+    Characteristics:
+    - Small influence radius for dense branching
+    - Moderate curvature constraint for realistic vessels
+    - Bifurcation encouraged for tree-like structure
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.010,  # 10mm - dense branching
+        kill_radius=0.002,  # 2mm - fine perfusion
+        step_size=0.003,  # 3mm - small steps
+        min_radius=0.0002,  # 0.2mm - capillary-like
+        taper_factor=0.92,  # Moderate tapering
+        vessel_type="arterial",
+        max_steps=200,
+        max_curvature_deg=60.0,  # Realistic vessel curvature
+        min_clearance=0.001,  # 1mm minimum clearance
+        encourage_bifurcation=True,
+        min_attractions_for_bifurcation=2,
+        max_children_per_node=2,
+        bifurcation_angle_threshold_deg=35.0,
+        bifurcation_probability=0.8,
+    )
+
+
+def liver_venous_sparse() -> SpaceColonizationParams:
+    """
+    Sparse venous tree for liver lobe.
+    
+    Characteristics:
+    - Larger influence radius for sparser branching
+    - Less aggressive bifurcation
+    - Larger minimum radius
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.020,  # 20mm - sparse branching
+        kill_radius=0.004,  # 4mm - coarser perfusion
+        step_size=0.006,  # 6mm - larger steps
+        min_radius=0.0004,  # 0.4mm
+        taper_factor=0.94,  # Gentler tapering
+        vessel_type="venous",
+        max_steps=150,
+        max_curvature_deg=70.0,  # More flexible
+        min_clearance=0.0015,  # 1.5mm minimum clearance
+        encourage_bifurcation=True,
+        min_attractions_for_bifurcation=3,
+        max_children_per_node=2,
+        bifurcation_angle_threshold_deg=40.0,
+        bifurcation_probability=0.6,
+    )
+
+
+def kidney_arterial() -> SpaceColonizationParams:
+    """
+    Arterial tree for kidney.
+    
+    Characteristics:
+    - Very dense branching for high perfusion
+    - Tight curvature constraints
+    - Strong bifurcation encouragement
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.008,  # 8mm - very dense
+        kill_radius=0.0015,  # 1.5mm - fine perfusion
+        step_size=0.0025,  # 2.5mm - small steps
+        min_radius=0.00015,  # 0.15mm
+        taper_factor=0.90,  # Aggressive tapering
+        vessel_type="arterial",
+        max_steps=250,
+        max_curvature_deg=50.0,  # Tight curvature
+        min_clearance=0.0008,  # 0.8mm minimum clearance
+        encourage_bifurcation=True,
+        min_attractions_for_bifurcation=2,
+        max_children_per_node=2,
+        bifurcation_angle_threshold_deg=30.0,
+        bifurcation_probability=0.85,
+    )
+
+
+def sparse_debug() -> SpaceColonizationParams:
+    """
+    Sparse network for quick visual debugging.
+    
+    Characteristics:
+    - Very large influence radius
+    - Large step size
+    - Few steps
+    - No quality constraints
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.040,  # 40mm - very sparse
+        kill_radius=0.010,  # 10mm - coarse perfusion
+        step_size=0.015,  # 15mm - large steps
+        min_radius=0.001,  # 1mm
+        taper_factor=0.98,  # Minimal tapering
+        vessel_type="arterial",
+        max_steps=30,  # Quick generation
+        max_curvature_deg=None,  # No curvature constraint
+        min_clearance=None,  # No clearance check
+        encourage_bifurcation=False,
+    )
+
+
+def lung_arterial() -> SpaceColonizationParams:
+    """
+    Pulmonary arterial tree.
+    
+    Characteristics:
+    - Moderate density
+    - Directional bias toward alveoli
+    - Moderate curvature
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.012,  # 12mm
+        kill_radius=0.003,  # 3mm
+        step_size=0.004,  # 4mm
+        min_radius=0.0003,  # 0.3mm
+        taper_factor=0.93,
+        vessel_type="arterial",
+        max_steps=180,
+        max_curvature_deg=65.0,
+        min_clearance=0.0012,  # 1.2mm
+        encourage_bifurcation=True,
+        min_attractions_for_bifurcation=2,
+        max_children_per_node=2,
+        bifurcation_angle_threshold_deg=38.0,
+        bifurcation_probability=0.75,
+    )
+
+
+def brain_arterial() -> SpaceColonizationParams:
+    """
+    Cerebral arterial tree.
+    
+    Characteristics:
+    - Very dense for high metabolic demand
+    - Strict curvature constraints
+    - Small vessels
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.006,  # 6mm - very dense
+        kill_radius=0.0012,  # 1.2mm
+        step_size=0.002,  # 2mm - small steps
+        min_radius=0.0001,  # 0.1mm - very fine
+        taper_factor=0.88,  # Aggressive tapering
+        vessel_type="arterial",
+        max_steps=300,
+        max_curvature_deg=45.0,  # Strict curvature
+        min_clearance=0.0006,  # 0.6mm
+        encourage_bifurcation=True,
+        min_attractions_for_bifurcation=2,
+        max_children_per_node=2,
+        bifurcation_angle_threshold_deg=32.0,
+        bifurcation_probability=0.9,
+    )
+
+
+PRESETS = {
+    "liver_arterial_dense": liver_arterial_dense,
+    "liver_venous_sparse": liver_venous_sparse,
+    "kidney_arterial": kidney_arterial,
+    "sparse_debug": sparse_debug,
+    "lung_arterial": lung_arterial,
+    "brain_arterial": brain_arterial,
+}
+
+
+def get_preset(name: str) -> SpaceColonizationParams:
+    """
+    Get a parameter preset by name.
+    
+    Parameters
+    ----------
+    name : str
+        Preset name (e.g., "liver_arterial_dense", "sparse_debug")
+        
+    Returns
+    -------
+    SpaceColonizationParams
+        Parameter configuration
+        
+    Raises
+    ------
+    ValueError
+        If preset name is not recognized
+    """
+    if name not in PRESETS:
+        available = ", ".join(PRESETS.keys())
+        raise ValueError(f"Unknown preset '{name}'. Available: {available}")
+    
+    return PRESETS[name]()
+
+
+def list_presets() -> list:
+    """List all available preset names."""
+    return list(PRESETS.keys())
