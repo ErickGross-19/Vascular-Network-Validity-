@@ -125,6 +125,7 @@ class OutletSpec:
 class ColonizationSpec:
     """Space colonization parameters specification."""
     
+    tissue_points: Optional[List[List[float]]] = None
     influence_radius: float = 0.015
     kill_radius: float = 0.002
     step_size: float = 0.001
@@ -150,6 +151,7 @@ class ColonizationSpec:
     @staticmethod
     def from_dict(d: Dict[str, Any]) -> 'ColonizationSpec':
         return ColonizationSpec(
+            tissue_points=d.get("tissue_points"),
             influence_radius=d.get("influence_radius", 0.015),
             kill_radius=d.get("kill_radius", 0.002),
             step_size=d.get("step_size", 0.001),
