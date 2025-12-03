@@ -28,12 +28,43 @@ def plot_poiseuille_flows_from_report(report: ValidationReport) -> None:
     plt.tight_layout()
 
 
-def plot_centerline_graph_2d(G, plane="xz", title="Centerline graph"):
+def plot_centerline_graph_2d(
+    G,
+    plane="xz",
+    title="Centerline graph",
+    size_by="junction",
+    base_px=3.0,
+    radius_scale=2000.0,
+    min_px=2.0,
+    max_px=50.0,
+):
     """
-    Plot a 2D projection of the centerline graph.
+    Plot a 2D projection of the centerline graph with node sizes scaled by junction properties.
+    
+    Parameters
+    ----------
+    G : networkx.Graph
+        Centerline graph
+    plane : str
+        Projection plane: 'xz', 'xy', or 'yz'
+    title : str
+        Plot title
+    size_by : str
+        Node sizing method: 'junction' (Murray + degree), 'max_radius', 'mean_radius', 'degree', 'fixed'
+    base_px : float
+        Base node size in points^2
+    radius_scale : float
+        Scaling factor for radius contribution
+    min_px : float
+        Minimum node size
+    max_px : float
+        Maximum node size
     """
+    from ..analysis.node_metrics import compute_node_display_sizes
+    
     plt.figure(figsize=(4, 6))
     xs, ys = [], []
+    node_ids = []
 
     for n, data in G.nodes(data=True):
         p = np.asarray(data.get("pos", data.get("coord", [0, 0, 0])), dtype=float)
@@ -43,8 +74,22 @@ def plot_centerline_graph_2d(G, plane="xz", title="Centerline graph"):
             xs.append(p[1]); ys.append(p[2])
         else:
             xs.append(p[0]); ys.append(p[2])
+        node_ids.append(n)
 
-    plt.scatter(xs, ys, s=5)
+    if size_by == 'fixed':
+        sizes = [5.0] * len(node_ids)
+    else:
+        size_dict = compute_node_display_sizes(
+            G,
+            size_by=size_by,
+            base_px=base_px,
+            radius_scale=radius_scale,
+            min_px=min_px,
+            max_px=max_px,
+        )
+        sizes = [size_dict.get(nid, 5.0) for nid in node_ids]
+
+    plt.scatter(xs, ys, s=sizes)
     plt.xlabel(plane[0])
     plt.ylabel(plane[1])
     plt.title(title)
