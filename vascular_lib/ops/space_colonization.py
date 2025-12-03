@@ -23,6 +23,11 @@ class SpaceColonizationParams:
     vessel_type: str = "arterial"
     max_steps: int = 100  # Maximum growth steps per call
     
+    preferred_direction: Optional[tuple] = None  # (x, y, z) preferred growth direction
+    directional_bias: float = 0.0  # 0-1: weight for preferred direction (0=pure attraction, 1=pure directional)
+    max_deviation_deg: float = 180.0  # Maximum angle deviation from preferred direction (hard constraint)
+    smoothing_weight: float = 0.2  # 0-1: weight for previous direction smoothing
+    
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
@@ -33,6 +38,10 @@ class SpaceColonizationParams:
             "taper_factor": self.taper_factor,
             "vessel_type": self.vessel_type,
             "max_steps": self.max_steps,
+            "preferred_direction": self.preferred_direction,
+            "directional_bias": self.directional_bias,
+            "max_deviation_deg": self.max_deviation_deg,
+            "smoothing_weight": self.smoothing_weight,
         }
     
     @classmethod
@@ -46,6 +55,10 @@ class SpaceColonizationParams:
             taper_factor=d.get("taper_factor", 0.95),
             vessel_type=d.get("vessel_type", "arterial"),
             max_steps=d.get("max_steps", 100),
+            preferred_direction=d.get("preferred_direction", None),
+            directional_bias=d.get("directional_bias", 0.0),
+            max_deviation_deg=d.get("max_deviation_deg", 180.0),
+            smoothing_weight=d.get("smoothing_weight", 0.2),
         )
 
 
@@ -165,6 +178,55 @@ def space_colonization_step(
                 continue
             
             avg_direction = avg_direction / np.linalg.norm(avg_direction)
+            
+            if params.preferred_direction is not None and params.directional_bias > 0:
+                d_pref = np.array(params.preferred_direction)
+                d_pref = d_pref / np.linalg.norm(d_pref)
+                
+                d_prev = None
+                if "direction" in node.attributes and params.smoothing_weight > 0:
+                    prev_dir = Direction3D.from_dict(node.attributes["direction"])
+                    d_prev = prev_dir.to_array()
+                
+                # Blend attraction, preferred direction, and previous direction
+                v_attr = avg_direction
+                beta = params.directional_bias
+                w_prev = params.smoothing_weight if d_prev is not None else 0.0
+                
+                if d_prev is not None:
+                    blended = (1 - beta - w_prev) * v_attr + beta * d_pref + w_prev * d_prev
+                else:
+                    blended = (1 - beta) * v_attr + beta * d_pref
+                
+                blended_norm = np.linalg.norm(blended)
+                if blended_norm > 1e-10:
+                    blended = blended / blended_norm
+                else:
+                    blended = d_pref
+                
+                if params.max_deviation_deg < 180.0:
+                    angle_to_pref = np.arccos(np.clip(np.dot(blended, d_pref), -1.0, 1.0))
+                    max_angle_rad = np.radians(params.max_deviation_deg)
+                    
+                    if angle_to_pref > max_angle_rad:
+                        axis = np.cross(blended, d_pref)
+                        axis_norm = np.linalg.norm(axis)
+                        
+                        if axis_norm > 1e-10:
+                            axis = axis / axis_norm
+                            rotation_angle = angle_to_pref - max_angle_rad
+                            cos_rot = np.cos(rotation_angle)
+                            sin_rot = np.sin(rotation_angle)
+                            
+                            blended = (blended * cos_rot +
+                                     np.cross(axis, blended) * sin_rot +
+                                     axis * np.dot(axis, blended) * (1 - cos_rot))
+                            blended = blended / np.linalg.norm(blended)
+                        else:
+                            blended = d_pref
+                
+                avg_direction = blended
+            
             growth_direction = Direction3D.from_array(avg_direction)
             
             parent_radius = node.attributes.get("radius", params.min_radius * 2)
