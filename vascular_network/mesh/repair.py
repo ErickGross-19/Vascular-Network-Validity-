@@ -10,7 +10,7 @@ def auto_adjust_voxel_pitch(
     mesh: trimesh.Trimesh,
     requested_pitch: float,
     max_voxels: float = 3e7,
-    min_pitch: float = 0.01,
+    min_pitch: float = 1e-5,
 ) -> float:
     """
     Given a mesh and requested voxel pitch, compute a safe pitch
