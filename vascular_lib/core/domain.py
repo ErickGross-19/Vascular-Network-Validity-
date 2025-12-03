@@ -179,6 +179,112 @@ class EllipsoidDomain(DomainSpec):
 
 
 @dataclass
+class BoxDomain(DomainSpec):
+    """Rectangular box domain."""
+    
+    x_min: float
+    x_max: float
+    y_min: float
+    y_max: float
+    z_min: float
+    z_max: float
+    
+    def __post_init__(self):
+        """Validate box dimensions."""
+        if self.x_min >= self.x_max:
+            raise ValueError(f"x_min ({self.x_min}) must be less than x_max ({self.x_max})")
+        if self.y_min >= self.y_max:
+            raise ValueError(f"y_min ({self.y_min}) must be less than y_max ({self.y_max})")
+        if self.z_min >= self.z_max:
+            raise ValueError(f"z_min ({self.z_min}) must be less than z_max ({self.z_max})")
+    
+    def contains(self, point: Point3D) -> bool:
+        """Check if point is inside box."""
+        return (
+            self.x_min <= point.x <= self.x_max and
+            self.y_min <= point.y <= self.y_max and
+            self.z_min <= point.z <= self.z_max
+        )
+    
+    def project_inside(self, point: Point3D) -> Point3D:
+        """Project point to nearest point inside box."""
+        if self.contains(point):
+            return point
+        
+        margin = 0.001
+        x = np.clip(point.x, self.x_min + margin, self.x_max - margin)
+        y = np.clip(point.y, self.y_min + margin, self.y_max - margin)
+        z = np.clip(point.z, self.z_min + margin, self.z_max - margin)
+        
+        return Point3D(x, y, z)
+    
+    def distance_to_boundary(self, point: Point3D) -> float:
+        """Compute distance to nearest box face."""
+        dist_x_min = abs(point.x - self.x_min)
+        dist_x_max = abs(point.x - self.x_max)
+        dist_y_min = abs(point.y - self.y_min)
+        dist_y_max = abs(point.y - self.y_max)
+        dist_z_min = abs(point.z - self.z_min)
+        dist_z_max = abs(point.z - self.z_max)
+        
+        return float(min(dist_x_min, dist_x_max, dist_y_min, dist_y_max, dist_z_min, dist_z_max))
+    
+    def sample_points(self, n_points: int, seed: Optional[int] = None) -> np.ndarray:
+        """Sample random points uniformly inside box."""
+        rng = np.random.default_rng(seed)
+        
+        x = rng.uniform(self.x_min, self.x_max, n_points)
+        y = rng.uniform(self.y_min, self.y_max, n_points)
+        z = rng.uniform(self.z_min, self.z_max, n_points)
+        
+        return np.column_stack([x, y, z])
+    
+    def get_bounds(self) -> tuple:
+        """Get bounding box (same as box itself)."""
+        return (
+            self.x_min, self.x_max,
+            self.y_min, self.y_max,
+            self.z_min, self.z_max,
+        )
+    
+    def to_dict(self) -> dict:
+        """Convert to dictionary."""
+        return {
+            "type": "box",
+            "x_min": self.x_min,
+            "x_max": self.x_max,
+            "y_min": self.y_min,
+            "y_max": self.y_max,
+            "z_min": self.z_min,
+            "z_max": self.z_max,
+        }
+    
+    @classmethod
+    def from_dict(cls, d: dict) -> "BoxDomain":
+        """Create from dictionary."""
+        return cls(
+            x_min=d["x_min"],
+            x_max=d["x_max"],
+            y_min=d["y_min"],
+            y_max=d["y_max"],
+            z_min=d["z_min"],
+            z_max=d["z_max"],
+        )
+    
+    @classmethod
+    def from_center_and_size(cls, center: Point3D, width: float, height: float, depth: float) -> "BoxDomain":
+        """Create box from center point and dimensions."""
+        return cls(
+            x_min=center.x - width / 2,
+            x_max=center.x + width / 2,
+            y_min=center.y - height / 2,
+            y_max=center.y + height / 2,
+            z_min=center.z - depth / 2,
+            z_max=center.z + depth / 2,
+        )
+
+
+@dataclass
 class MeshDomain(DomainSpec):
     """Mesh-based domain from STL file."""
     
@@ -278,6 +384,8 @@ def domain_from_dict(d: dict) -> DomainSpec:
     
     if domain_type == "ellipsoid":
         return EllipsoidDomain.from_dict(d)
+    elif domain_type == "box":
+        return BoxDomain.from_dict(d)
     elif domain_type == "mesh":
         return MeshDomain.from_dict(d)
     else:
