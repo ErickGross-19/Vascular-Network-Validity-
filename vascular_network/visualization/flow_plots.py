@@ -32,14 +32,16 @@ def plot_centerline_graph_2d(
     G,
     plane="xz",
     title="Centerline graph",
-    size_by="junction",
-    base_px=3.0,
-    radius_scale=2000.0,
-    min_px=2.0,
-    max_px=50.0,
+    size_by="fixed",
+    fixed_px=0.15,
+    base_px=0.1,
+    radius_scale=20.0,
+    min_px=0.05,
+    max_px=2.0,
+    node_alpha=0.2,
 ):
     """
-    Plot a 2D projection of the centerline graph with node sizes scaled by junction properties.
+    Plot a 2D projection of the centerline graph with minimal node visibility.
     
     Parameters
     ----------
@@ -50,15 +52,19 @@ def plot_centerline_graph_2d(
     title : str
         Plot title
     size_by : str
-        Node sizing method: 'junction' (Murray + degree), 'max_radius', 'mean_radius', 'degree', 'fixed'
+        Node sizing method: 'fixed' (default, almost invisible), 'junction', 'max_radius', 'mean_radius', 'degree'
+    fixed_px : float
+        Fixed node size in points^2 when size_by='fixed' (default: 0.15 for almost invisible)
     base_px : float
-        Base node size in points^2
+        Base node size in points^2 for dynamic sizing
     radius_scale : float
-        Scaling factor for radius contribution
+        Scaling factor for radius contribution (reduced from 2000 to 20 for smaller nodes)
     min_px : float
-        Minimum node size
+        Minimum node size (default: 0.05 for almost invisible)
     max_px : float
-        Maximum node size
+        Maximum node size (default: 2.0 for almost invisible)
+    node_alpha : float
+        Node transparency (default: 0.2 for almost invisible)
     """
     from ..analysis.node_metrics import compute_node_display_sizes
     
@@ -77,19 +83,21 @@ def plot_centerline_graph_2d(
         node_ids.append(n)
 
     if size_by == 'fixed':
-        sizes = [5.0] * len(node_ids)
+        sizes = [fixed_px] * len(node_ids)
     else:
         size_dict = compute_node_display_sizes(
             G,
             size_by=size_by,
             base_px=base_px,
             radius_scale=radius_scale,
+            degree_scale=0.0,
             min_px=min_px,
             max_px=max_px,
+            inlet_outlet_boost=1.0,
         )
-        sizes = [size_dict.get(nid, 5.0) for nid in node_ids]
+        sizes = [size_dict.get(nid, fixed_px) for nid in node_ids]
 
-    plt.scatter(xs, ys, s=sizes)
+    plt.scatter(xs, ys, s=sizes, edgecolors='none', linewidths=0, alpha=node_alpha)
     plt.xlabel(plane[0])
     plt.ylabel(plane[1])
     plt.title(title)
