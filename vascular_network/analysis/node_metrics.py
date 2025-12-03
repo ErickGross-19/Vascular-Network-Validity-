@@ -97,9 +97,11 @@ def compute_node_display_sizes(
     radius_scale: float = 2000.0,
     degree_scale: float = 1.0,
     degree_alpha: float = 0.3,
-    min_px: float = 2.0,
-    max_px: float = 50.0,
+    min_px: Optional[float] = None,
+    max_px: Optional[float] = None,
     inlet_outlet_boost: float = 1.3,
+    k_px2: float = 0.1,
+    radius_power: float = 1.5,
 ) -> Dict[int, float]:
     """
     Compute display sizes (in matplotlib scatter points^2) for each node.
@@ -109,7 +111,8 @@ def compute_node_display_sizes(
     G : networkx.Graph
         Centerline graph
     size_by : str
-        Sizing method: 'junction' (Murray + degree), 'max_radius', 'mean_radius', 'degree'
+        Sizing method: 'radius_tiny' (radius-proportional, almost invisible), 
+        'junction' (Murray + degree), 'max_radius', 'mean_radius', 'degree'
     base_px : float
         Base size in points^2
     radius_scale : float
@@ -124,6 +127,10 @@ def compute_node_display_sizes(
         Maximum node size
     inlet_outlet_boost : float
         Multiplier for inlet/outlet nodes to make them stand out
+    k_px2 : float
+        Scaling factor for 'radius_tiny' mode (default: 0.1 for almost invisible)
+    radius_power : float
+        Exponent for radius scaling in 'radius_tiny' mode (default: 1.5)
         
     Returns
     -------
@@ -133,29 +140,56 @@ def compute_node_display_sizes(
     metrics = compute_node_junction_metrics(G)
     sizes = {}
     
-    for node_id, m in metrics.items():
-        if size_by == 'junction':
+    if min_px is None:
+        min_px = 0.02 if size_by == 'radius_tiny' else 2.0
+    if max_px is None:
+        max_px = 0.6 if size_by == 'radius_tiny' else 50.0
+    
+    if size_by == 'radius_tiny':
+        eff_radii = []
+        for m in metrics.values():
             eff = m['effective_radius_murray3']
-            deg = m['degree']
-            size = base_px + radius_scale * eff + degree_scale * (deg ** degree_alpha)
-        elif size_by == 'max_radius':
-            size = base_px + radius_scale * m['max_radius']
-        elif size_by == 'mean_radius':
-            size = base_px + radius_scale * m['mean_radius']
-        elif size_by == 'degree':
-            deg = m['degree']
-            size = base_px + degree_scale * (deg ** degree_alpha)
+            if eff > 0:
+                eff_radii.append(eff)
+        
+        if eff_radii:
+            r_ref = float(np.median(eff_radii))
         else:
-            size = base_px
+            r_ref = 1.0
         
-        node_type = m['node_type']
-        if node_type in ['inlet', 'outlet']:
-            size *= inlet_outlet_boost
-        elif node_type == 'terminal':
-            size = base_px + radius_scale * m['mean_radius'] * 0.5
-        
-        size = np.clip(size, min_px, max_px)
-        
-        sizes[node_id] = float(size)
+        for node_id, m in metrics.items():
+            eff = m['effective_radius_murray3']
+            if eff > 0 and r_ref > 0:
+                size = k_px2 * ((eff / r_ref) ** radius_power)
+            else:
+                size = min_px
+            
+            size = np.clip(size, min_px, max_px)
+            sizes[node_id] = float(size)
+    else:
+        for node_id, m in metrics.items():
+            if size_by == 'junction':
+                eff = m['effective_radius_murray3']
+                deg = m['degree']
+                size = base_px + radius_scale * eff + degree_scale * (deg ** degree_alpha)
+            elif size_by == 'max_radius':
+                size = base_px + radius_scale * m['max_radius']
+            elif size_by == 'mean_radius':
+                size = base_px + radius_scale * m['mean_radius']
+            elif size_by == 'degree':
+                deg = m['degree']
+                size = base_px + degree_scale * (deg ** degree_alpha)
+            else:
+                size = base_px
+            
+            node_type = m['node_type']
+            if node_type in ['inlet', 'outlet']:
+                size *= inlet_outlet_boost
+            elif node_type == 'terminal':
+                size = base_px + radius_scale * m['mean_radius'] * 0.5
+            
+            size = np.clip(size, min_px, max_px)
+            
+            sizes[node_id] = float(size)
     
     return sizes
