@@ -140,6 +140,7 @@ def space_colonization_step(
     
     tissue_points_list = [Point3D.from_array(p) for p in tissue_points]
     active_tissue_points = set(range(len(tissue_points_list)))
+    initial_count = len(tissue_points_list)
     
     new_node_ids = []
     new_segment_ids = []
@@ -295,7 +296,6 @@ def space_colonization_step(
     
     pbar.close()
     
-    initial_count = len(tissue_points_list)
     perfused_count = initial_count - len(active_tissue_points)
     coverage_fraction = perfused_count / initial_count if initial_count > 0 else 0.0
     
