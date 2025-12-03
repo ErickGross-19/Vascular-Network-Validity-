@@ -4,6 +4,7 @@ from pymeshfix import MeshFix
 from scipy import ndimage
 from skimage.measure import marching_cubes
 import trimesh.smoothing as tmsmooth
+from tqdm import tqdm
 
 
 def auto_adjust_voxel_pitch(
@@ -117,12 +118,16 @@ def voxel_remesh_and_smooth(
         print(f"[voxel_remesh_and_smooth] After keeping largest component: {after_component} voxels")
 
     if closing_iters > 0:
-        fluid_mask = ndimage.binary_closing(fluid_mask, iterations=closing_iters)
+        print(f"[voxel_remesh_and_smooth] Applying binary closing ({closing_iters} iterations)...")
+        for _ in tqdm(range(closing_iters), desc="Closing", unit="iter"):
+            fluid_mask = ndimage.binary_closing(fluid_mask, iterations=1)
         after_closing = np.count_nonzero(fluid_mask)
         print(f"[voxel_remesh_and_smooth] After closing: {after_closing} voxels")
 
     if opening_iters > 0:
-        fluid_mask = ndimage.binary_opening(fluid_mask, iterations=opening_iters)
+        print(f"[voxel_remesh_and_smooth] Applying binary opening ({opening_iters} iterations)...")
+        for _ in tqdm(range(opening_iters), desc="Opening", unit="iter"):
+            fluid_mask = ndimage.binary_opening(fluid_mask, iterations=1)
         after_opening = np.count_nonzero(fluid_mask)
         print(f"[voxel_remesh_and_smooth] After opening: {after_opening} voxels")
         
@@ -135,7 +140,9 @@ def voxel_remesh_and_smooth(
             dilation_iters = max(0, dilation_iters - 1)
 
     if dilation_iters > 0:
-        fluid_mask = ndimage.binary_dilation(fluid_mask, iterations=dilation_iters)
+        print(f"[voxel_remesh_and_smooth] Applying binary dilation ({dilation_iters} iterations)...")
+        for _ in tqdm(range(dilation_iters), desc="Dilation", unit="iter"):
+            fluid_mask = ndimage.binary_dilation(fluid_mask, iterations=1)
         after_dilation = np.count_nonzero(fluid_mask)
         print(f"[voxel_remesh_and_smooth] After dilation: {after_dilation} voxels")
 
@@ -166,19 +173,25 @@ def voxel_remesh_and_smooth(
 
     if smooth_iters > 0:
         try:
-            if use_taubin:
-                tmsmooth.filter_taubin(
-                    mesh_voxel,
-                    lamb=0.5,
-                    nu=-0.53,
-                    iterations=smooth_iters,
-                )
-            else:
-                tmsmooth.filter_laplacian(
-                    mesh_voxel,
-                    lamb=0.5,
-                    iterations=smooth_iters,
-                )
+            print(f"[voxel_remesh_and_smooth] Applying {'Taubin' if use_taubin else 'Laplacian'} smoothing ({smooth_iters} iterations)...")
+            with tqdm(total=smooth_iters, desc="Smoothing", unit="iter") as pbar:
+                if use_taubin:
+                    for _ in range(smooth_iters):
+                        tmsmooth.filter_taubin(
+                            mesh_voxel,
+                            lamb=0.5,
+                            nu=-0.53,
+                            iterations=1,
+                        )
+                        pbar.update(1)
+                else:
+                    for _ in range(smooth_iters):
+                        tmsmooth.filter_laplacian(
+                            mesh_voxel,
+                            lamb=0.5,
+                            iterations=1,
+                        )
+                        pbar.update(1)
         except Exception as e:
             print(f"[voxel_remesh_and_smooth] smoothing failed: {e}")
 

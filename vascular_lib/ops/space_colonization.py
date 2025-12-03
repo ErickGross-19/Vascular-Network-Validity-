@@ -5,6 +5,7 @@ Space colonization algorithm for organic vascular growth.
 from dataclasses import dataclass
 from typing import List, Optional, Set
 import numpy as np
+from tqdm import tqdm
 from ..core.types import Point3D, Direction3D
 from ..core.network import VascularNetwork
 from ..core.result import OperationResult, OperationStatus, Delta
@@ -145,8 +146,11 @@ def space_colonization_step(
     warnings = []
     steps_taken = 0
     
+    pbar = tqdm(total=params.max_steps, desc="Space colonization", unit="step")
+    
     for step in range(params.max_steps):
         if not active_tissue_points:
+            pbar.close()
             break
         
         terminal_nodes = [
@@ -271,9 +275,15 @@ def space_colonization_step(
                 warnings.extend(result.errors)
         
         if not grown_any:
+            pbar.close()
             break
         
         steps_taken += 1
+        pbar.update(1)
+        pbar.set_postfix({
+            'nodes': len(new_node_ids),
+            'coverage': f'{(initial_count - len(active_tissue_points)) / initial_count:.1%}' if initial_count > 0 else '0%'
+        })
         
         for tp_idx in list(active_tissue_points):
             tp = tissue_points_list[tp_idx]
@@ -282,6 +292,8 @@ def space_colonization_step(
                 if node.position.distance_to(tp) < params.kill_radius:
                     active_tissue_points.remove(tp_idx)
                     break
+    
+    pbar.close()
     
     initial_count = len(tissue_points_list)
     perfused_count = initial_count - len(active_tissue_points)
