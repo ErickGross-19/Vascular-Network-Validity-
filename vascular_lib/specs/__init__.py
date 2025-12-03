@@ -23,3 +23,21 @@ __all__ = [
     "DualTreeSpec",
     "DesignSpec",
 ]
+
+from .eval_result import (
+    CoverageMetrics,
+    FlowMetrics,
+    StructureMetrics,
+    ValidityMetrics,
+    EvalScores,
+    EvalResult,
+)
+
+__all__.extend([
+    "CoverageMetrics",
+    "FlowMetrics",
+    "StructureMetrics",
+    "ValidityMetrics",
+    "EvalScores",
+    "EvalResult",
+])
