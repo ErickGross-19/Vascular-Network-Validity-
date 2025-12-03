@@ -73,14 +73,21 @@ def to_trimesh(
             meshes.append(mesh)
         
         for node_id, node in network.nodes.items():
-            max_radius = 0.001  # Default 1mm
+            # Start from 0 so we only grow based on attached segments
+            max_radius = 0.0
             for seg in network.segments.values():
                 if seg.start_node_id == node_id:
                     max_radius = max(max_radius, seg.geometry.radius_start)
                 elif seg.end_node_id == node_id:
                     max_radius = max(max_radius, seg.geometry.radius_end)
-            
-            sphere_radius = max_radius * 1.05
+        
+            # If no segments touch this node, skip making a sphere
+            if max_radius <= 0.00002:
+                continue
+        
+            # Make node spheres much smaller than vessel radii
+            sphere_radius = max_radius * 0.2  # try 0.1–0.3 depending how subtle you want it
+
             
             center = np.array([node.position.x, node.position.y, node.position.z])
             sphere = trimesh.creation.icosphere(subdivisions=2, radius=sphere_radius)
