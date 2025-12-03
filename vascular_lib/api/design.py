@@ -37,7 +37,7 @@ def design_from_spec(spec: DesignSpec) -> VascularNetwork:
         raise ValueError(f"Unsupported domain type: {type(spec.domain)}")
     
     # Create network
-    network = create_network(domain=domain, seed=spec.seed).network
+    network = create_network(domain=domain, seed=spec.seed)
     
     # Handle single tree or dual tree
     if spec.tree is not None:
