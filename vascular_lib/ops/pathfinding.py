@@ -44,7 +44,7 @@ class CostWeights:
         )
 
 
-def space_colonization_astar(
+def grow_toward_targets(
     network: VascularNetwork,
     from_node_id: int,
     target_positions: List[Tuple[float, float, float]],
@@ -54,10 +54,11 @@ def space_colonization_astar(
     seed: Optional[int] = None,
 ) -> OperationResult:
     """
-    Grow branch using A* pathfinding to target positions.
+    Grow branch directly toward target positions.
     
-    This is a simplified implementation that grows directly toward targets.
-    Full A* implementation with waypoint graphs can be added later.
+    This is a simplified pathfinding implementation that grows sequentially
+    toward each target. For more sophisticated obstacle-aware routing,
+    use the full A* implementation (to be added).
     
     Parameters
     ----------
