@@ -35,6 +35,10 @@ class SpaceColonizationParams:
     bifurcation_angle_threshold_deg: float = 40.0  # Minimum angle spread to trigger bifurcation
     bifurcation_probability: float = 0.7  # Probability of bifurcating when conditions are met
     
+    # Phase 1b: Quality constraints
+    max_curvature_deg: Optional[float] = None  # Maximum curvature angle (None = no limit)
+    min_clearance: Optional[float] = None  # Minimum clearance from other segments (None = no check)
+    
     def to_dict(self) -> dict:
         """Convert to dictionary."""
         return {
@@ -54,6 +58,8 @@ class SpaceColonizationParams:
             "max_children_per_node": self.max_children_per_node,
             "bifurcation_angle_threshold_deg": self.bifurcation_angle_threshold_deg,
             "bifurcation_probability": self.bifurcation_probability,
+            "max_curvature_deg": self.max_curvature_deg,
+            "min_clearance": self.min_clearance,
         }
     
     @classmethod
@@ -76,6 +82,8 @@ class SpaceColonizationParams:
             max_children_per_node=d.get("max_children_per_node", 2),
             bifurcation_angle_threshold_deg=d.get("bifurcation_angle_threshold_deg", 40.0),
             bifurcation_probability=d.get("bifurcation_probability", 0.7),
+            max_curvature_deg=d.get("max_curvature_deg"),
+            min_clearance=d.get("min_clearance"),
         )
 
 
@@ -248,7 +256,19 @@ def space_colonization_step(
                 
                 avg_direction = blended
             
+            avg_direction = _apply_curvature_constraint(avg_direction, node, params)
+            
             growth_direction = Direction3D.from_array(avg_direction)
+            
+            # Check clearance before growing (B3)
+            new_pos = Point3D(
+                node.position.x + growth_direction.dx * params.step_size,
+                node.position.y + growth_direction.dy * params.step_size,
+                node.position.z + growth_direction.dz * params.step_size,
+            )
+            
+            if not _check_clearance(new_pos, network, node.id, params):
+                continue  # Skip this growth due to clearance violation
             
             parent_radius = node.attributes.get("radius", params.min_radius * 2)
             new_radius = parent_radius * params.taper_factor
@@ -468,3 +488,105 @@ def _apply_directional_blending(
         return blended
     
     return avg_direction
+
+
+def _apply_curvature_constraint(
+    growth_direction: np.ndarray,
+    node,
+    params: SpaceColonizationParams,
+) -> np.ndarray:
+    """
+    Apply maximum curvature constraint to growth direction.
+    
+    If the node has a previous direction and max_curvature_deg is set,
+    constrains the new direction to not exceed the maximum bend angle.
+    """
+    if params.max_curvature_deg is None:
+        return growth_direction
+    
+    # Get previous direction
+    if "direction" not in node.attributes:
+        return growth_direction  # No previous direction, no constraint
+    
+    prev_dir = Direction3D.from_dict(node.attributes["direction"])
+    d_prev = prev_dir.to_array()
+    
+    # Compute angle between previous and proposed direction
+    cos_angle = np.clip(np.dot(d_prev, growth_direction), -1.0, 1.0)
+    angle_deg = np.degrees(np.arccos(abs(cos_angle)))
+    
+    # If within limit, return as-is
+    if angle_deg <= params.max_curvature_deg:
+        return growth_direction
+    
+    # Project growth_direction onto cone around d_prev
+    max_angle_rad = np.radians(params.max_curvature_deg)
+    
+    # Rotation axis: perpendicular to both vectors
+    axis = np.cross(d_prev, growth_direction)
+    axis_norm = np.linalg.norm(axis)
+    
+    if axis_norm < 1e-10:
+        # Vectors are parallel or anti-parallel
+        return d_prev if cos_angle > 0 else -d_prev
+    
+    axis = axis / axis_norm
+    
+    # Rotate d_prev by max_angle_rad around axis
+    cos_rot = np.cos(max_angle_rad)
+    sin_rot = np.sin(max_angle_rad)
+    
+    constrained = (d_prev * cos_rot +
+                   np.cross(axis, d_prev) * sin_rot +
+                   axis * np.dot(axis, d_prev) * (1 - cos_rot))
+    
+    return constrained / np.linalg.norm(constrained)
+
+
+def _check_clearance(
+    new_position: Point3D,
+    network: VascularNetwork,
+    from_node_id: int,
+    params: SpaceColonizationParams,
+) -> bool:
+    """
+    Check if new position maintains minimum clearance from other segments.
+    
+    Returns True if clearance is acceptable, False otherwise.
+    """
+    if params.min_clearance is None:
+        return True  # No clearance check
+    
+    from_node = network.nodes[from_node_id]
+    
+    # Check distance to all segments not connected to from_node
+    for seg in network.segments.values():
+        # Skip segments connected to from_node
+        if seg.start_node_id == from_node_id or seg.end_node_id == from_node_id:
+            continue
+        
+        # Compute distance from new_position to segment
+        p1 = network.nodes[seg.start_node_id].position
+        p2 = network.nodes[seg.end_node_id].position
+        
+        # Distance from point to line segment
+        v = np.array([p2.x - p1.x, p2.y - p1.y, p2.z - p1.z])
+        w = np.array([new_position.x - p1.x, new_position.y - p1.y, new_position.z - p1.z])
+        
+        v_len_sq = np.dot(v, v)
+        if v_len_sq < 1e-10:
+            # Degenerate segment
+            dist = np.linalg.norm(w)
+        else:
+            t = np.clip(np.dot(w, v) / v_len_sq, 0.0, 1.0)
+            projection = p1.to_array() + t * v
+            dist = np.linalg.norm(new_position.to_array() - projection)
+        
+        # Check clearance (accounting for radii)
+        seg_radius = seg.attributes.get("radius", 0.001)
+        required_clearance = params.min_clearance + seg_radius
+        
+        if dist < required_clearance:
+            return False  # Too close
+    
+    return True  # Clearance OK
