@@ -25,7 +25,7 @@ def test_design_from_spec():
         step_size=0.010,
         max_steps=10,
     )
-    tree = TreeSpec(inlet=inlet, colonization=colonization)
+    tree = TreeSpec(inlets=[inlet], outlets=[], colonization=colonization)
     spec = DesignSpec(domain=domain, tree=tree)
     network = design_from_spec(spec)
     assert len(network.nodes) > 0
