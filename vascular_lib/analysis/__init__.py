@@ -9,6 +9,7 @@ from .query import (
 from .coverage import compute_coverage
 from .flow import estimate_flows, check_hemodynamic_plausibility
 from .perfusion import compute_perfusion_metrics, suggest_anastomosis_locations
+from .solver import solve_flow, compute_component_flows
 
 __all__ = [
     "get_leaf_nodes",
@@ -20,4 +21,6 @@ __all__ = [
     "check_hemodynamic_plausibility",
     "compute_perfusion_metrics",
     "suggest_anastomosis_locations",
+    "solve_flow",
+    "compute_component_flows",
 ]
