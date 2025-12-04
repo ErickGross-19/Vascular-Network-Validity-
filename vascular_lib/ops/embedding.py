@@ -210,7 +210,10 @@ def embed_tree_as_negative_space(
             volume=solid_mask.astype(np.uint8),
             level=0.5,
             spacing=(voxel_pitch, voxel_pitch, voxel_pitch),
+            allow_degenerate=False,
         )
+        
+        verts = verts[:, [2, 1, 0]]
         
         verts += domain_min
         
@@ -219,9 +222,20 @@ def embed_tree_as_negative_space(
             faces=faces.astype(np.int64),
             process=False,
         )
+        
         domain_mesh.remove_unreferenced_vertices()
+        
+        if domain_mesh.volume < 0:
+            domain_mesh.invert()
+        
+        trimesh.repair.fix_normals(domain_mesh)
+        
+        if not domain_mesh.is_watertight:
+            trimesh.repair.fill_holes(domain_mesh)
+        
         result['domain_with_void'] = domain_mesh
         print(f"Domain mesh: {len(domain_mesh.vertices)} vertices, {len(domain_mesh.faces)} faces")
+        print(f"  Watertight: {domain_mesh.is_watertight}, Volume: {domain_mesh.volume:.9f}")
     else:
         result['domain_with_void'] = None
         print("Warning: Solid mask is empty, no domain mesh generated")
@@ -232,7 +246,10 @@ def embed_tree_as_negative_space(
             volume=void_mask.astype(np.uint8),
             level=0.5,
             spacing=(voxel_pitch, voxel_pitch, voxel_pitch),
+            allow_degenerate=False,
         )
+        
+        verts = verts[:, [2, 1, 0]]
         
         verts += domain_min
         
@@ -241,9 +258,20 @@ def embed_tree_as_negative_space(
             faces=faces.astype(np.int64),
             process=False,
         )
+        
         void_mesh.remove_unreferenced_vertices()
+        
+        if void_mesh.volume < 0:
+            void_mesh.invert()
+        
+        trimesh.repair.fix_normals(void_mesh)
+        
+        if not void_mesh.is_watertight:
+            trimesh.repair.fill_holes(void_mesh)
+        
         result['void'] = void_mesh
         print(f"Void mesh: {len(void_mesh.vertices)} vertices, {len(void_mesh.faces)} faces")
+        print(f"  Watertight: {void_mesh.is_watertight}, Volume: {void_mesh.volume:.9f}")
     else:
         result['void'] = None
     
@@ -258,7 +286,10 @@ def embed_tree_as_negative_space(
                 volume=shell_mask.astype(np.uint8),
                 level=0.5,
                 spacing=(voxel_pitch, voxel_pitch, voxel_pitch),
+                allow_degenerate=False,
             )
+            
+            verts = verts[:, [2, 1, 0]]
             
             verts += domain_min
             
@@ -267,9 +298,20 @@ def embed_tree_as_negative_space(
                 faces=faces.astype(np.int64),
                 process=False,
             )
+            
             shell_mesh.remove_unreferenced_vertices()
+            
+            if shell_mesh.volume < 0:
+                shell_mesh.invert()
+            
+            trimesh.repair.fix_normals(shell_mesh)
+            
+            if not shell_mesh.is_watertight:
+                trimesh.repair.fill_holes(shell_mesh)
+            
             result['shell'] = shell_mesh
             print(f"Shell mesh: {len(shell_mesh.vertices)} vertices, {len(shell_mesh.faces)} faces")
+            print(f"  Watertight: {shell_mesh.is_watertight}, Volume: {shell_mesh.volume:.9f}")
         else:
             result['shell'] = None
             print("Warning: Shell mask is empty, no shell mesh generated")
