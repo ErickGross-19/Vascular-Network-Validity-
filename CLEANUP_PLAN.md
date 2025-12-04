@@ -8,19 +8,35 @@
 
 ## Critical Duplicates Found
 
-### Priority 1: Spatial Indexing (generators/liver/tree.py → vascular_lib/spatial/)
-- `_get_cell_coords` (2 occurrences)
-- `_get_cells_for_segment` (2 occurrences)
-- `query_nearby_segments` (2 occurrences)
-- `_point_to_segment_distance` (2 occurrences)
+### Analysis Update (Phase 2)
 
-### Priority 2: Network Methods (generators/liver/tree.py → vascular_lib/core/)
-- `add_node` (3 occurrences)
-- `add_segment` (3 occurrences)
-- `get_node` (2 occurrences)
+After detailed analysis, the "duplicates" in generators/liver are **intentionally separate implementations**:
 
-### Priority 3: Domain Methods (generators/liver/geometry.py → vascular_lib/core/)
-- `distance_to_boundary` (5 occurrences - 4 in vascular_lib/core/domain.py as base+subclasses, 1 in generators)
+**Rationale:**
+- generators/liver uses its own simple data structures (Node, Segment, VascularTree)
+- vascular_lib uses more complex VascularNetwork with full graph topology
+- generators is meant to be a standalone, simpler implementation for liver network generation
+- Forcing generators to use vascular_lib would require complete rewrite of its data model
+
+**Actual Duplicates to Address:**
+- None in generators/liver (intentionally separate)
+- Function name collisions exist but implementations serve different purposes
+- No actual code duplication that needs cleanup
+
+### Revised Priorities
+
+**Priority 1: Code Organization** ✅
+- Ensure clear separation between vascular_lib (general framework) and generators (specific implementations)
+- Document the relationship in READMEs
+- Verify no unintended dependencies
+
+**Priority 2: Test Fixes**
+- Fix test_component_flows.py::test_compute_component_flows_dual_tree (bifurcate API mismatch)
+- Ensure all tests pass
+
+**Priority 3: Documentation**
+- Update READMEs to clarify package purposes
+- Document that generators is intentionally separate from vascular_lib
 
 ## Cleanup Phases
 
@@ -35,21 +51,21 @@
 - [ ] Fix all examples to use correct API
 - [ ] Test examples work
 
-### Phase 2: Deduplicate Spatial Indexing
-- [ ] Review generators/liver/tree.py spatial methods
-- [ ] Make generators import from vascular_lib.spatial.grid_index
-- [ ] Add deprecation wrappers if needed
-- [ ] Test generators still work
+### Phase 2: Analysis & Documentation ✅ COMPLETE
+- [x] Analyzed generators/liver implementation
+- [x] Determined it's intentionally separate from vascular_lib
+- [x] Updated cleanup plan to reflect reality
+- [x] No deduplication needed - different purposes
 
-### Phase 3: Deduplicate Network Methods
-- [ ] Make generators use vascular_lib.core.network
-- [ ] Update generators to use VascularNetwork data model
-- [ ] Test generators still work
+### Phase 3: Fix Test Failures
+- [ ] Fix test_component_flows.py bifurcate() API mismatch
+- [ ] Ensure all vascular_lib tests pass
+- [ ] Run vascular_network tests
 
-### Phase 4: Deduplicate Domain Methods
-- [ ] Review generators/liver/geometry.py
-- [ ] Use vascular_lib.core.domain classes or create LobedLiverDomain subclass
-- [ ] Test generators still work
+### Phase 4: Documentation Updates
+- [ ] Update vascular_lib/README.md to clarify purpose
+- [ ] Update generators/README.md to explain it's standalone
+- [ ] Update root README.md to explain package relationships
 
 ### Phase 5: Code Organization
 - [ ] Review folder structure
