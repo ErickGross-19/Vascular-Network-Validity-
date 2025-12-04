@@ -12,13 +12,15 @@ class BranchingConstraints:
     Constraints for branching behavior.
     
     Controls how vessels can branch and grow.
+    
+    Units: All spatial parameters are in millimeters.
     """
     
-    min_radius: float = 0.0003  # 0.3 mm (capillary scale)
-    max_radius: float = 0.01  # 10 mm
+    min_radius: float = 0.3  # 0.3 mm (capillary scale)
+    max_radius: float = 10.0  # 10 mm
     max_branch_order: int = 12
-    min_segment_length: float = 0.001  # 1 mm
-    max_segment_length: float = 0.05  # 50 mm
+    min_segment_length: float = 1.0  # 1 mm
+    max_segment_length: float = 50.0  # 50 mm
     max_branch_angle_deg: float = 80.0
     curvature_limit_deg: float = 15.0  # Max curvature per step
     termination_rule: str = "radius_or_order"  # "radius_or_order", "radius_only", "order_only"
@@ -42,11 +44,11 @@ class BranchingConstraints:
     def from_dict(cls, d: dict) -> "BranchingConstraints":
         """Create from dictionary."""
         return cls(
-            min_radius=d.get("min_radius", 0.0003),
-            max_radius=d.get("max_radius", 0.01),
+            min_radius=d.get("min_radius", 0.3),
+            max_radius=d.get("max_radius", 10.0),
             max_branch_order=d.get("max_branch_order", 12),
-            min_segment_length=d.get("min_segment_length", 0.001),
-            max_segment_length=d.get("max_segment_length", 0.05),
+            min_segment_length=d.get("min_segment_length", 1.0),
+            max_segment_length=d.get("max_segment_length", 50.0),
             max_branch_angle_deg=d.get("max_branch_angle_deg", 80.0),
             curvature_limit_deg=d.get("curvature_limit_deg", 15.0),
             termination_rule=d.get("termination_rule", "radius_or_order"),
@@ -115,6 +117,8 @@ class InteractionRuleSpec:
     Rules for interaction between different vessel types.
     
     Controls collision avoidance and connections between arterial/venous trees.
+    
+    Units: All spatial parameters are in millimeters.
     """
     
     min_distance_between_types: Dict[tuple, float] = field(default_factory=dict)
@@ -125,9 +129,9 @@ class InteractionRuleSpec:
         """Set default values."""
         if not self.min_distance_between_types:
             self.min_distance_between_types = {
-                ("arterial", "venous"): 0.001,  # 1 mm minimum clearance
-                ("arterial", "arterial"): 0.0005,  # 0.5 mm within same type
-                ("venous", "venous"): 0.0005,
+                ("arterial", "venous"): 1.0,  # 1 mm minimum clearance
+                ("arterial", "arterial"): 0.5,  # 0.5 mm within same type
+                ("venous", "venous"): 0.5,
             }
         
         if not self.anastomosis_allowed:
@@ -140,7 +144,7 @@ class InteractionRuleSpec:
     def get_min_distance(self, type1: str, type2: str) -> float:
         """Get minimum distance between two vessel types."""
         key = tuple(sorted([type1, type2]))
-        return self.min_distance_between_types.get(key, 0.001)
+        return self.min_distance_between_types.get(key, 1.0)
     
     def is_anastomosis_allowed(self, type1: str, type2: str) -> bool:
         """Check if anastomosis is allowed between two vessel types."""
@@ -193,11 +197,13 @@ class DegradationRuleSpec:
     
     Controls how vessel radii decrease through successive generations,
     modeling the tapering of vascular trees from large vessels to capillaries.
+    
+    Units: All spatial parameters are in millimeters.
     """
     
     model: Literal["exponential", "linear", "generation_based", "none"] = "exponential"
     degradation_factor: float = 0.85
-    min_terminal_radius: float = 0.0001
+    min_terminal_radius: float = 0.1  # 0.1 mm
     max_generation: Optional[int] = None
     
     def __post_init__(self):
@@ -260,7 +266,7 @@ class DegradationRuleSpec:
             Reason for termination if applicable
         """
         if radius <= self.min_terminal_radius:
-            return True, f"Radius {radius:.6f}m at or below minimum {self.min_terminal_radius:.6f}m"
+            return True, f"Radius {radius:.6f}mm at or below minimum {self.min_terminal_radius:.6f}mm"
         
         if self.max_generation is not None and generation >= self.max_generation:
             return True, f"Generation {generation} reached maximum {self.max_generation}"
@@ -282,17 +288,17 @@ class DegradationRuleSpec:
         return cls(
             model=d.get("model", "exponential"),
             degradation_factor=d.get("degradation_factor", 0.85),
-            min_terminal_radius=d.get("min_terminal_radius", 0.0001),
+            min_terminal_radius=d.get("min_terminal_radius", 0.1),
             max_generation=d.get("max_generation"),
         )
     
     @classmethod
-    def exponential(cls, factor: float = 0.85, min_radius: float = 0.0001) -> "DegradationRuleSpec":
+    def exponential(cls, factor: float = 0.85, min_radius: float = 0.1) -> "DegradationRuleSpec":
         """Create exponential degradation rule."""
         return cls(model="exponential", degradation_factor=factor, min_terminal_radius=min_radius)
     
     @classmethod
-    def linear(cls, factor: float = 0.85, min_radius: float = 0.0001) -> "DegradationRuleSpec":
+    def linear(cls, factor: float = 0.85, min_radius: float = 0.1) -> "DegradationRuleSpec":
         """Create linear degradation rule."""
         return cls(model="linear", degradation_factor=factor, min_terminal_radius=min_radius)
     

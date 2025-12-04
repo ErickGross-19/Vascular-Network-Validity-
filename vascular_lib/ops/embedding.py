@@ -210,6 +210,12 @@ def embed_tree_as_negative_space(
     
     copy_size = np.maximum(copy_size, 0)
     
+    print(f"Alignment diagnostics:")
+    print(f"  tree_origin: {tree_origin}")
+    print(f"  offset_voxels: {offset_voxels}")
+    print(f"  src_start: {src_start}, dst_start: {dst_start}")
+    print(f"  copy_size: {copy_size}")
+    
     if np.all(copy_size > 0):
         aligned_tree_mask[
             dst_start[0]:dst_start[0] + copy_size[0],
@@ -220,8 +226,28 @@ def embed_tree_as_negative_space(
             src_start[1]:src_start[1] + copy_size[1],
             src_start[2]:src_start[2] + copy_size[2]
         ]
+    else:
+        print(f"WARNING: No overlap between tree and domain!")
+        print(f"  Tree bounds: {tree_min} to {tree_max}")
+        print(f"  Domain bounds: {domain_min} to {domain_max}")
+        print(f"  Possible causes:")
+        print(f"    - STL units misdetected (detected: {stl_units})")
+        print(f"    - Tree outside domain boundaries")
+        print(f"    - Domain too small for tree")
+        print(f"  Suggestions:")
+        print(f"    - Increase margin parameter")
+        print(f"    - Check STL units (set stl_units='mm' or 'm' explicitly)")
+        print(f"    - Verify domain dimensions match tree size")
     
     print(f"Tree mask: {aligned_tree_mask.sum()} voxels ({100 * aligned_tree_mask.sum() / aligned_tree_mask.size:.1f}%)")
+    
+    if aligned_tree_mask.sum() == 0 and np.all(copy_size > 0):
+        print(f"WARNING: Tree disappeared during voxelization!")
+        print(f"  Voxel pitch ({voxel_pitch} mm) may be too coarse for thin vessels")
+        print(f"  Suggestions:")
+        print(f"    - Reduce voxel_pitch to 0.25-0.5 mm")
+        print(f"    - Set dilation_voxels=1-2 to thicken thin features")
+        print(f"    - Check that vessel diameters are > 2× voxel_pitch")
     
     if dilation_voxels > 0:
         print(f"Dilating tree by {dilation_voxels} voxels...")
@@ -317,12 +343,30 @@ def embed_tree_as_negative_space(
         result['void'] = None
     
     if output_shell and void_mask.any():
-        print(f"Generating shell mesh (thickness={shell_thickness})...")
-        dist_from_void = ndimage.distance_transform_edt(~void_mask) * voxel_pitch
+        print(f"Generating shell mesh (thickness={shell_thickness} mm)...")
         
-        shell_mask = (dist_from_void <= shell_thickness) & domain_mask & (~void_mask)
+        effective_thickness = shell_thickness
+        if shell_thickness < voxel_pitch:
+            print(f"WARNING: shell_thickness ({shell_thickness} mm) < voxel_pitch ({voxel_pitch} mm)")
+            print(f"  Using effective_thickness = {voxel_pitch} mm (1 voxel layer)")
+            effective_thickness = voxel_pitch
+        
+        th_vox = max(1, int(np.ceil(effective_thickness / voxel_pitch)))
+        print(f"  Shell thickness: {th_vox} voxels ({effective_thickness} mm)")
+        
+        dist_from_void = ndimage.distance_transform_edt(
+            ~void_mask,
+            sampling=(voxel_pitch, voxel_pitch, voxel_pitch)
+        )
+        
+        shell_mask = (dist_from_void <= effective_thickness) & domain_mask & (~void_mask)
+        
+        if not shell_mask.any() and th_vox >= 1:
+            print(f"  EDT-based shell is empty, using morphological fallback...")
+            shell_mask = ndimage.binary_dilation(void_mask, iterations=th_vox) & domain_mask & (~void_mask)
         
         if shell_mask.any():
+            print(f"  Shell mask: {shell_mask.sum()} voxels")
             verts, faces, _, _ = marching_cubes(
                 volume=shell_mask.astype(np.uint8),
                 level=0.5,
@@ -355,9 +399,21 @@ def embed_tree_as_negative_space(
             print(f"  Watertight: {shell_mesh.is_watertight}, Volume: {shell_mesh.volume:.9f}")
         else:
             result['shell'] = None
-            print("Warning: Shell mask is empty, no shell mesh generated")
+            print("WARNING: Shell mask is empty after both EDT and morphological methods")
+            print(f"  Possible causes:")
+            print(f"    - Void mask is empty (no tree voxels in domain)")
+            print(f"    - shell_thickness ({shell_thickness} mm) too small")
+            print(f"    - voxel_pitch ({voxel_pitch} mm) too coarse")
+            print(f"  Suggestions:")
+            print(f"    - Increase shell_thickness to at least {2 * voxel_pitch} mm")
+            print(f"    - Reduce voxel_pitch to 0.25-0.5 mm")
+            print(f"    - Set dilation_voxels=1-2 to thicken tree")
     else:
         result['shell'] = None
+        if output_shell and not void_mask.any():
+            print("WARNING: Cannot generate shell - void mask is empty")
+            print("  The tree was not successfully voxelized in the domain")
+            print("  See warnings above for tree mask alignment issues")
     
     result['metadata'] = {
         'voxel_pitch': voxel_pitch,

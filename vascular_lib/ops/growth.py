@@ -182,6 +182,199 @@ def grow_branch(
     )
 
 
+def grow_to_point(
+    network: VascularNetwork,
+    from_node_id: int,
+    target_point: Tuple[float, float, float] | Point3D,
+    target_radius: Optional[float] = None,
+    constraints: Optional[BranchingConstraints] = None,
+    check_collisions: bool = True,
+    seed: Optional[int] = None,
+) -> OperationResult:
+    """
+    Grow a straight branch from an existing node to a target point.
+    
+    This is a convenience function that computes the direction and length
+    from the parent node to the target point, then grows a branch.
+    
+    Parameters
+    ----------
+    network : VascularNetwork
+        Network to modify
+    from_node_id : int
+        Node to grow from
+    target_point : tuple or Point3D
+        Target point to grow to (x, y, z) in millimeters
+    target_radius : float, optional
+        Radius of new segment (if None, uses parent radius)
+    constraints : BranchingConstraints, optional
+        Branching constraints
+    check_collisions : bool
+        Whether to check for collisions
+    seed : int, optional
+        Random seed for deterministic behavior
+    
+    Returns
+    -------
+    result : OperationResult
+        Result with new_ids containing 'node' and 'segment'
+    
+    Examples
+    --------
+    >>> from vascular_lib.core.network import VascularNetwork
+    >>> from vascular_lib.core.domain import BoxDomain
+    >>> from vascular_lib.ops.growth import grow_to_point
+    >>> 
+    >>> # Create network with inlet node
+    >>> domain = BoxDomain.from_center_and_size((0, 0, 0), 100, 100, 100)
+    >>> network = VascularNetwork(domain=domain)
+    >>> inlet_id = network.add_inlet((0, 0, 0), radius=5.0)
+    >>> 
+    >>> # Grow branch to specific point
+    >>> result = grow_to_point(
+    ...     network,
+    ...     from_node_id=inlet_id,
+    ...     target_point=(20, 10, 5),  # Target coordinates in mm
+    ...     target_radius=3.0,
+    ... )
+    >>> 
+    >>> if result.is_success():
+    ...     new_node_id = result.new_ids['node']
+    ...     print(f"Created node at target point: {new_node_id}")
+    """
+    if constraints is None:
+        constraints = BranchingConstraints()
+    
+    parent_node = network.get_node(from_node_id)
+    if parent_node is None:
+        return OperationResult.failure(
+            message=f"Node {from_node_id} not found",
+            errors=["Node not found"],
+        )
+    
+    if isinstance(target_point, tuple):
+        target_point = Point3D(target_point[0], target_point[1], target_point[2])
+    
+    if not network.domain.contains(target_point):
+        return OperationResult.failure(
+            message=f"Target point {target_point} is outside domain",
+            errors=["Target point outside domain"],
+        )
+    
+    parent_pos = parent_node.position
+    dx = target_point.x - parent_pos.x
+    dy = target_point.y - parent_pos.y
+    dz = target_point.z - parent_pos.z
+    
+    length = np.sqrt(dx**2 + dy**2 + dz**2)
+    
+    if length < 1e-6:
+        return OperationResult.failure(
+            message=f"Target point is too close to parent node (distance: {length:.6f})",
+            errors=["Target point too close"],
+        )
+    
+    direction = Direction3D(dx / length, dy / length, dz / length)
+    
+    if target_radius is None:
+        if "radius" in parent_node.attributes:
+            target_radius = parent_node.attributes["radius"]
+        else:
+            return OperationResult.failure(
+                message=f"No radius specified and node has no stored radius",
+                errors=["Missing radius"],
+            )
+    
+    # Validate length against constraints
+    if length < constraints.min_segment_length:
+        return OperationResult.failure(
+            message=f"Distance to target {length:.4f} below minimum segment length {constraints.min_segment_length}",
+            errors=["Length too short"],
+        )
+    
+    if length > constraints.max_segment_length:
+        return OperationResult.failure(
+            message=f"Distance to target {length:.4f} above maximum segment length {constraints.max_segment_length}",
+            errors=["Length too long"],
+        )
+    
+    if target_radius < constraints.min_radius:
+        return OperationResult.failure(
+            message=f"Radius {target_radius} below minimum {constraints.min_radius}",
+            errors=["Radius too small"],
+        )
+    
+    warnings = []
+    if check_collisions:
+        spatial_index = network.get_spatial_index()
+        nearby = spatial_index.query_nearby_segments(
+            target_point,
+            target_radius * 3.0,
+        )
+        
+        for seg in nearby:
+            if seg.start_node_id == from_node_id or seg.end_node_id == from_node_id:
+                continue
+            
+            dist = spatial_index._point_to_segment_distance(target_point, seg)
+            min_clearance = target_radius + seg.geometry.mean_radius() + 0.001
+            
+            if dist < min_clearance:
+                warnings.append(f"Near collision with segment {seg.id} (distance: {dist:.4f})")
+    
+    new_node_id = network.id_gen.next_id()
+    new_node = Node(
+        id=new_node_id,
+        position=target_point,
+        node_type="terminal",
+        vessel_type=parent_node.vessel_type,
+        attributes={
+            "radius": target_radius,
+            "direction": direction.to_dict(),
+            "branch_order": parent_node.attributes.get("branch_order", 0) + 1,
+        },
+    )
+    
+    segment_id = network.id_gen.next_id()
+    parent_radius = parent_node.attributes.get("radius", target_radius)
+    geometry = TubeGeometry(
+        start=parent_node.position,
+        end=target_point,
+        radius_start=parent_radius,
+        radius_end=target_radius,
+    )
+    
+    segment = VesselSegment(
+        id=segment_id,
+        start_node_id=from_node_id,
+        end_node_id=new_node_id,
+        geometry=geometry,
+        vessel_type=parent_node.vessel_type,
+    )
+    
+    network.add_node(new_node)
+    network.add_segment(segment)
+    
+    if parent_node.node_type == "terminal":
+        parent_node.node_type = "junction"
+    
+    delta = Delta(
+        created_node_ids=[new_node_id],
+        created_segment_ids=[segment_id],
+    )
+    
+    status = OperationStatus.SUCCESS if not warnings else OperationStatus.PARTIAL_SUCCESS
+    
+    return OperationResult(
+        status=status,
+        message=f"Grew branch from node {from_node_id} to point {target_point}",
+        new_ids={"node": new_node_id, "segment": segment_id},
+        warnings=warnings,
+        delta=delta,
+        rng_state=network.id_gen.get_state(),
+    )
+
+
 def bifurcate(
     network: VascularNetwork,
     at_node_id: int,
