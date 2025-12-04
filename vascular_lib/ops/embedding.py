@@ -3,6 +3,8 @@ Negative space embedding operations for vascular networks.
 
 This module provides functionality to embed vascular tree STL meshes into
 domain volumes (box or ellipsoid) as negative space (voids).
+
+Units: All spatial parameters are in millimeters by default.
 """
 
 import numpy as np
@@ -13,18 +15,21 @@ from scipy import ndimage
 from skimage.measure import marching_cubes
 
 from ..core.domain import DomainSpec, BoxDomain, EllipsoidDomain
+from ..utils.units import detect_unit, warn_if_legacy_units, CANONICAL_UNIT
 
 
 def embed_tree_as_negative_space(
     tree_stl_path: Union[str, Path],
     domain: DomainSpec,
-    voxel_pitch: float = 0.001,
+    voxel_pitch: float = 1.0,
     margin: float = 0.0,
     dilation_voxels: int = 0,
     smoothing_iters: int = 5,
     output_void: bool = True,
     output_shell: bool = False,
-    shell_thickness: float = 0.002,
+    shell_thickness: float = 2.0,
+    stl_units: str = "auto",
+    geometry_units: str = CANONICAL_UNIT,
 ) -> Dict[str, Optional[trimesh.Trimesh]]:
     """
     Embed a vascular tree STL mesh into a domain as negative space (void).
@@ -32,17 +37,19 @@ def embed_tree_as_negative_space(
     This creates a solid domain mesh with the tree carved out as a void.
     Useful for creating molds, scaffolds, or perfusion chambers.
     
+    **Units**: All spatial parameters are in millimeters by default.
+    
     Parameters
     ----------
     tree_stl_path : str or Path
         Path to the vascular tree STL file
     domain : DomainSpec
-        Domain specification (BoxDomain or EllipsoidDomain)
+        Domain specification (BoxDomain or EllipsoidDomain) in millimeters
     voxel_pitch : float
-        Voxel size in world units (default: 0.001 = 1mm)
+        Voxel size in millimeters (default: 1.0mm)
         Smaller values give higher resolution but slower computation
     margin : float
-        Additional margin around tree bounds when auto-sizing domain (default: 0)
+        Additional margin around tree bounds in millimeters (default: 0)
     dilation_voxels : int
         Number of voxels to dilate the tree by (useful if tree is thin centerlines)
         Default: 0 (no dilation)
@@ -53,7 +60,12 @@ def embed_tree_as_negative_space(
     output_shell : bool
         Whether to output a shell mesh around the void (default: False)
     shell_thickness : float
-        Thickness of shell around void in world units (default: 0.002 = 2mm)
+        Thickness of shell around void in millimeters (default: 2.0mm)
+    stl_units : str
+        Units of the input STL file ('mm', 'm', 'auto'). Default: 'auto'
+        'auto' will attempt to detect based on bounding box size
+    geometry_units : str
+        Units for domain and output geometry ('mm', 'm', 'cm'). Default: 'mm'
     
     Returns
     -------
@@ -70,19 +82,20 @@ def embed_tree_as_negative_space(
     >>> from vascular_lib.core.types import Point3D
     >>> from vascular_lib.ops.embedding import embed_tree_as_negative_space
     >>> 
-    >>> # Create a box domain
+    >>> # Create a box domain (in millimeters)
     >>> domain = BoxDomain.from_center_and_size(
     ...     center=Point3D(0, 0, 0),
-    ...     width=0.1, height=0.1, depth=0.1  # 100mm cube
+    ...     width=100, height=100, depth=100  # 100mm cube
     ... )
     >>> 
     >>> # Embed tree as negative space
     >>> result = embed_tree_as_negative_space(
     ...     tree_stl_path='tree.stl',
     ...     domain=domain,
-    ...     voxel_pitch=0.0005,  # 0.5mm voxels
+    ...     voxel_pitch=0.5,  # 0.5mm voxels
     ...     output_void=True,
-    ...     output_shell=True
+    ...     output_shell=True,
+    ...     stl_units='auto',  # Auto-detect STL units
     ... )
     >>> 
     >>> # Export results
@@ -101,6 +114,29 @@ def embed_tree_as_negative_space(
     tree_max = tree_bounds[1]
     tree_center = (tree_min + tree_max) / 2
     tree_size = tree_max - tree_min
+    
+    if stl_units == "auto":
+        max_dimension = np.max(tree_size)
+        if max_dimension < 1.0:
+            stl_units = "m"
+            print(f"Auto-detected STL units: meters (max dimension: {max_dimension:.4f}m)")
+        elif max_dimension < 1000.0:
+            stl_units = "mm"
+            print(f"Auto-detected STL units: millimeters (max dimension: {max_dimension:.1f}mm)")
+        else:
+            stl_units = "mm"
+            print(f"Warning: STL max dimension {max_dimension:.1f} is unusually large. Assuming millimeters.")
+    
+    if stl_units != geometry_units:
+        from ..utils.units import convert_length
+        scale_factor = convert_length(1.0, stl_units, geometry_units)
+        tree_mesh.apply_scale(scale_factor)
+        tree_bounds = tree_mesh.bounds
+        tree_min = tree_bounds[0]
+        tree_max = tree_bounds[1]
+        tree_center = (tree_min + tree_max) / 2
+        tree_size = tree_max - tree_min
+        print(f"Scaled STL from {stl_units} to {geometry_units} (scale factor: {scale_factor})")
     
     if isinstance(domain, BoxDomain):
         domain_min = np.array([domain.x_min, domain.y_min, domain.z_min])

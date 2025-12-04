@@ -18,6 +18,8 @@ The liver vascular network generator creates realistic arterial and venous trees
 
 ### Quick Start
 
+**Units**: All spatial parameters are in **millimeters**.
+
 ```python
 from generators.liver import LiverVascularConfig, generate_liver_vasculature
 
@@ -26,7 +28,7 @@ arterial_tree, venous_tree = generate_liver_vasculature()
 
 # Or customize parameters
 config = LiverVascularConfig(random_seed=42)
-config.murray.arterial_root_radius = 0.006  # 6 mm
+config.murray.arterial_root_radius = 6.0  # 6 mm
 config.growth.max_segments_per_tree = 1000
 arterial_tree, venous_tree = generate_liver_vasculature(config)
 

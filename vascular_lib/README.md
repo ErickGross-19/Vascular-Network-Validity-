@@ -6,6 +6,8 @@ A composable "LEGO kit" library for LLM-driven iterative vascular network design
 
 This library provides a clean, explicit API for designing vascular networks through small, composable operations. It's specifically designed for LLM consumption with:
 
+**Units**: All spatial parameters are in **millimeters** by default.
+
 - **Small, composable operations** - Each function does one thing well
 - **Structured feedback** - Every operation returns explicit status, warnings, and errors
 - **Full serializability** - Everything converts to/from JSON for LLM reasoning
@@ -31,8 +33,8 @@ from vascular_lib import (
 )
 from vascular_lib.core import EllipsoidDomain
 
-# Create liver-shaped domain
-domain = EllipsoidDomain(0.12, 0.10, 0.08)  # 12cm x 10cm x 8cm
+# Create liver-shaped domain (in millimeters)
+domain = EllipsoidDomain(120, 100, 80)  # 120mm x 100mm x 80mm
 
 # Create network
 network = create_network(domain, seed=42)
@@ -40,9 +42,9 @@ network = create_network(domain, seed=42)
 # Add inlet
 result = add_inlet(
     network,
-    position=(-0.10, 0.0, 0.0),
+    position=(-100, 0.0, 0.0),
     direction=(1.0, 0.0, 0.0),
-    radius=0.005,
+    radius=5.0,
 )
 inlet_id = result.new_ids['node']
 
@@ -50,7 +52,7 @@ inlet_id = result.new_ids['node']
 result = grow_branch(
     network,
     from_node_id=inlet_id,
-    length=0.02,
+    length=20.0,
     direction=(1.0, 0.0, 0.0),
 )
 
@@ -58,7 +60,7 @@ result = grow_branch(
 result = bifurcate(
     network,
     at_node_id=result.new_ids['node'],
-    child_lengths=(0.015, 0.015),
+    child_lengths=(15.0, 15.0),
     angle_deg=45.0,
 )
 

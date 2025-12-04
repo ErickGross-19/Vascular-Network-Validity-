@@ -22,11 +22,11 @@ def example_1_single_tree_with_preset():
     
     spec = DesignSpec(
         domain=EllipsoidSpec(
-            semi_axes=(0.12, 0.10, 0.08),  # 12cm x 10cm x 8cm liver
+            semi_axes=(120, 100, 80),  # 120mm x 100mm x 80mm liver
         ),
         tree=TreeSpec.single_inlet(
-            inlet_position=(-0.10, 0.0, 0.0),
-            inlet_radius=0.005,
+            inlet_position=(-100, 0.0, 0.0),
+            inlet_radius=5.0,
             colonization=get_preset("liver_arterial_dense"),
         ),
         seed=42,
@@ -68,14 +68,14 @@ def example_2_custom_colonization_params():
     print("=" * 70)
     
     custom_params = ColonizationSpec(
-        influence_radius=0.015,  # 15mm
-        kill_radius=0.003,  # 3mm
-        step_size=0.001,  # 1mm
-        min_radius=0.0003,  # 0.3mm
+        influence_radius=15.0,  # 15mm
+        kill_radius=3.0,  # 3mm
+        step_size=1.0,  # 1mm
+        min_radius=0.3,  # 0.3mm
         radius_decay=0.90,
         max_steps=100,
         max_curvature_deg=55.0,  # Moderate curvature constraint
-        min_clearance=0.0012,  # 1.2mm clearance
+        min_clearance=1.2,  # 1.2mm clearance
         encourage_bifurcation=True,
         bifurcation_probability=0.75,
     )
@@ -83,11 +83,11 @@ def example_2_custom_colonization_params():
     spec = DesignSpec(
         domain=BoxSpec(
             center=(0.0, 0.0, 0.0),
-            size=(0.20, 0.15, 0.10),  # 20cm x 15cm x 10cm box
+            size=(200, 150, 100),  # 200mm x 150mm x 100mm box
         ),
         tree=TreeSpec.single_inlet(
-            inlet_position=(-0.09, 0.0, 0.0),
-            inlet_radius=0.004,
+            inlet_position=(-90, 0.0, 0.0),
+            inlet_radius=4.0,
             colonization=custom_params,
         ),
         seed=123,
@@ -95,10 +95,10 @@ def example_2_custom_colonization_params():
     
     print(f"\n✓ Created DesignSpec with custom parameters:")
     print(f"  Domain: Box {spec.domain.size}")
-    print(f"  Influence radius: {custom_params.influence_radius*1000:.1f}mm")
-    print(f"  Kill radius: {custom_params.kill_radius*1000:.1f}mm")
+    print(f"  Influence radius: {custom_params.influence_radius:.1f}mm")
+    print(f"  Kill radius: {custom_params.kill_radius:.1f}mm")
     print(f"  Max curvature: {custom_params.max_curvature_deg}°")
-    print(f"  Min clearance: {custom_params.min_clearance*1000:.1f}mm")
+    print(f"  Min clearance: {custom_params.min_clearance:.1f}mm")
     
     print(f"\n✓ Building network...")
     network = design_from_spec(spec)
@@ -121,13 +121,13 @@ def example_3_dual_tree_design():
     
     spec = DesignSpec(
         domain=EllipsoidSpec(
-            semi_axes=(0.10, 0.08, 0.06),  # 10cm x 8cm x 6cm
+            semi_axes=(100, 80, 60),  # 100mm x 80mm x 60mm
         ),
         dual_tree=DualTreeSpec.single_inlet_outlet(
-            arterial_inlet_position=(-0.08, 0.0, 0.0),
-            arterial_inlet_radius=0.004,
-            venous_outlet_position=(0.08, 0.0, 0.0),
-            venous_outlet_radius=0.005,
+            arterial_inlet_position=(-80, 0.0, 0.0),
+            arterial_inlet_radius=4.0,
+            venous_outlet_position=(80, 0.0, 0.0),
+            venous_outlet_radius=5.0,
             arterial_colonization=get_preset("liver_arterial_dense"),
             venous_colonization=get_preset("liver_venous_sparse"),
         ),
@@ -166,10 +166,10 @@ def example_4_iterative_refinement():
     print("=" * 70)
     
     spec = DesignSpec(
-        domain=EllipsoidSpec(semi_axes=(0.10, 0.08, 0.06)),
+        domain=EllipsoidSpec(semi_axes=(100, 80, 60)),
         tree=TreeSpec.single_inlet(
-            inlet_position=(-0.08, 0.0, 0.0),
-            inlet_radius=0.004,
+            inlet_position=(-80, 0.0, 0.0),
+            inlet_radius=4.0,
             colonization=get_preset("sparse_debug"),  # Start sparse for speed
         ),
         seed=42,
@@ -206,10 +206,10 @@ def example_5_spec_serialization():
     print("=" * 70)
     
     spec = DesignSpec(
-        domain=EllipsoidSpec(semi_axes=(0.12, 0.10, 0.08)),
+        domain=EllipsoidSpec(semi_axes=(120, 100, 80)),
         tree=TreeSpec.single_inlet(
-            inlet_position=(-0.10, 0.0, 0.0),
-            inlet_radius=0.005,
+            inlet_position=(-100, 0.0, 0.0),
+            inlet_radius=5.0,
             colonization=get_preset("liver_arterial_dense"),
         ),
         seed=42,

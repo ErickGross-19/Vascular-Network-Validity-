@@ -13,7 +13,7 @@ def test_list_presets():
 
 def test_get_preset():
     params = get_preset("liver_arterial_dense")
-    assert params.influence_radius == 0.010
+    assert params.influence_radius == 10.0  # 10mm (updated from 0.010m)
     assert params.max_curvature_deg == 60.0
 
 

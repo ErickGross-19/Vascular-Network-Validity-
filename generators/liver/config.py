@@ -1,5 +1,7 @@
 """
 Configuration dataclasses for liver vascular network generation.
+
+Units: All spatial parameters are in millimeters.
 """
 
 from dataclasses import dataclass, field
@@ -9,29 +11,35 @@ import numpy as np
 
 @dataclass
 class LiverGeometryConfig:
-    """Configuration for liver domain geometry."""
+    """Configuration for liver domain geometry.
     
-    semi_axis_a: float = 0.12  # x-axis (left-right)
-    semi_axis_b: float = 0.10  # y-axis (anterior-posterior)
-    semi_axis_c: float = 0.08  # z-axis (superior-inferior)
+    Units: All spatial parameters are in millimeters.
+    """
     
-    arterial_root_position: Tuple[float, float, float] = (-0.8, 0.0, 0.0)  # Left side
-    venous_root_position: Tuple[float, float, float] = (0.8, 0.0, 0.0)  # Right side
+    semi_axis_a: float = 120.0  # x-axis (left-right) in mm
+    semi_axis_b: float = 100.0  # y-axis (anterior-posterior) in mm
+    semi_axis_c: float = 80.0  # z-axis (superior-inferior) in mm
+    
+    arterial_root_position: Tuple[float, float, float] = (-80.0, 0.0, 0.0)  # Left side in mm
+    venous_root_position: Tuple[float, float, float] = (80.0, 0.0, 0.0)  # Right side in mm
     
     meeting_shell_center_x: float = 0.0
-    meeting_shell_thickness: float = 0.02  # meters
+    meeting_shell_thickness: float = 20.0  # mm
 
 
 @dataclass
 class MurrayLawConfig:
-    """Configuration for Murray's law and radius scaling."""
+    """Configuration for Murray's law and radius scaling.
+    
+    Units: All radii are in millimeters.
+    """
     
     gamma: float = 3.0
     
-    arterial_root_radius: float = 0.005  # 5 mm
-    venous_root_radius: float = 0.006  # 6 mm (slightly larger)
+    arterial_root_radius: float = 5.0  # 5 mm
+    venous_root_radius: float = 6.0  # 6 mm (slightly larger)
     
-    min_radius: float = 0.0003  # 0.3 mm
+    min_radius: float = 0.3  # 0.3 mm
     
     split_ratio_mean: float = 0.6  # Asymmetric splits
     split_ratio_std: float = 0.1
@@ -57,16 +65,19 @@ class BranchingConfig:
 
 @dataclass
 class GrowthConfig:
-    """Configuration for tree growth algorithm."""
+    """Configuration for tree growth algorithm.
+    
+    Units: All spatial parameters are in millimeters.
+    """
     
     arterial_first: bool = True  # If False, interleave growth
     
     max_segments_per_tree: int = 5000
     
-    collision_margin: float = 0.0005  # 0.5 mm safety margin
+    collision_margin: float = 0.5  # 0.5 mm safety margin
     soft_collision_factor: float = 1.5  # Repulsion starts at 1.5× (r1+r2)
     
-    min_distance_to_boundary: float = 0.002  # 2 mm from liver surface
+    min_distance_to_boundary: float = 2.0  # 2 mm from liver surface
     
     parent_direction_weight: float = 0.7
     center_attraction_weight: float = 0.2

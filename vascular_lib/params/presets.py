@@ -3,6 +3,8 @@
 This module provides named parameter presets for SpaceColonizationParams
 to make it easier for LLMs to generate appropriate networks for different
 anatomical contexts and use cases.
+
+Units: All spatial parameters are in millimeters.
 """
 
 from ..ops.space_colonization import SpaceColonizationParams
@@ -16,17 +18,19 @@ def liver_arterial_dense() -> SpaceColonizationParams:
     - Small influence radius for dense branching
     - Moderate curvature constraint for realistic vessels
     - Bifurcation encouraged for tree-like structure
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.010,  # 10mm - dense branching
-        kill_radius=0.002,  # 2mm - fine perfusion
-        step_size=0.003,  # 3mm - small steps
-        min_radius=0.0002,  # 0.2mm - capillary-like
+        influence_radius=10.0,  # 10mm - dense branching
+        kill_radius=2.0,  # 2mm - fine perfusion
+        step_size=3.0,  # 3mm - small steps
+        min_radius=0.2,  # 0.2mm - capillary-like
         taper_factor=0.92,  # Moderate tapering
         vessel_type="arterial",
         max_steps=200,
         max_curvature_deg=60.0,  # Realistic vessel curvature
-        min_clearance=0.001,  # 1mm minimum clearance
+        min_clearance=1.0,  # 1mm minimum clearance
         encourage_bifurcation=True,
         min_attractions_for_bifurcation=2,
         max_children_per_node=2,
@@ -43,17 +47,19 @@ def liver_venous_sparse() -> SpaceColonizationParams:
     - Larger influence radius for sparser branching
     - Less aggressive bifurcation
     - Larger minimum radius
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.020,  # 20mm - sparse branching
-        kill_radius=0.004,  # 4mm - coarser perfusion
-        step_size=0.006,  # 6mm - larger steps
-        min_radius=0.0004,  # 0.4mm
+        influence_radius=20.0,  # 20mm - sparse branching
+        kill_radius=4.0,  # 4mm - coarser perfusion
+        step_size=6.0,  # 6mm - larger steps
+        min_radius=0.4,  # 0.4mm
         taper_factor=0.94,  # Gentler tapering
         vessel_type="venous",
         max_steps=150,
         max_curvature_deg=70.0,  # More flexible
-        min_clearance=0.0015,  # 1.5mm minimum clearance
+        min_clearance=1.5,  # 1.5mm minimum clearance
         encourage_bifurcation=True,
         min_attractions_for_bifurcation=3,
         max_children_per_node=2,
@@ -70,17 +76,19 @@ def kidney_arterial() -> SpaceColonizationParams:
     - Very dense branching for high perfusion
     - Tight curvature constraints
     - Strong bifurcation encouragement
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.008,  # 8mm - very dense
-        kill_radius=0.0015,  # 1.5mm - fine perfusion
-        step_size=0.0025,  # 2.5mm - small steps
-        min_radius=0.00015,  # 0.15mm
+        influence_radius=8.0,  # 8mm - very dense
+        kill_radius=1.5,  # 1.5mm - fine perfusion
+        step_size=2.5,  # 2.5mm - small steps
+        min_radius=0.15,  # 0.15mm
         taper_factor=0.90,  # Aggressive tapering
         vessel_type="arterial",
         max_steps=250,
         max_curvature_deg=50.0,  # Tight curvature
-        min_clearance=0.0008,  # 0.8mm minimum clearance
+        min_clearance=0.8,  # 0.8mm minimum clearance
         encourage_bifurcation=True,
         min_attractions_for_bifurcation=2,
         max_children_per_node=2,
@@ -98,12 +106,14 @@ def sparse_debug() -> SpaceColonizationParams:
     - Large step size
     - Few steps
     - No quality constraints
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.040,  # 40mm - very sparse
-        kill_radius=0.010,  # 10mm - coarse perfusion
-        step_size=0.015,  # 15mm - large steps
-        min_radius=0.001,  # 1mm
+        influence_radius=40.0,  # 40mm - very sparse
+        kill_radius=10.0,  # 10mm - coarse perfusion
+        step_size=15.0,  # 15mm - large steps
+        min_radius=1.0,  # 1mm
         taper_factor=0.98,  # Minimal tapering
         vessel_type="arterial",
         max_steps=30,  # Quick generation
@@ -121,17 +131,19 @@ def lung_arterial() -> SpaceColonizationParams:
     - Moderate density
     - Directional bias toward alveoli
     - Moderate curvature
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.012,  # 12mm
-        kill_radius=0.003,  # 3mm
-        step_size=0.004,  # 4mm
-        min_radius=0.0003,  # 0.3mm
+        influence_radius=12.0,  # 12mm
+        kill_radius=3.0,  # 3mm
+        step_size=4.0,  # 4mm
+        min_radius=0.3,  # 0.3mm
         taper_factor=0.93,
         vessel_type="arterial",
         max_steps=180,
         max_curvature_deg=65.0,
-        min_clearance=0.0012,  # 1.2mm
+        min_clearance=1.2,  # 1.2mm
         encourage_bifurcation=True,
         min_attractions_for_bifurcation=2,
         max_children_per_node=2,
@@ -148,17 +160,19 @@ def brain_arterial() -> SpaceColonizationParams:
     - Very dense for high metabolic demand
     - Strict curvature constraints
     - Small vessels
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.006,  # 6mm - very dense
-        kill_radius=0.0012,  # 1.2mm
-        step_size=0.002,  # 2mm - small steps
-        min_radius=0.0001,  # 0.1mm - very fine
+        influence_radius=6.0,  # 6mm - very dense
+        kill_radius=1.2,  # 1.2mm
+        step_size=2.0,  # 2mm - small steps
+        min_radius=0.1,  # 0.1mm - very fine
         taper_factor=0.88,  # Aggressive tapering
         vessel_type="arterial",
         max_steps=300,
         max_curvature_deg=45.0,  # Strict curvature
-        min_clearance=0.0006,  # 0.6mm
+        min_clearance=0.6,  # 0.6mm
         encourage_bifurcation=True,
         min_attractions_for_bifurcation=2,
         max_children_per_node=2,
@@ -177,12 +191,14 @@ def dense_bifurcation() -> SpaceColonizationParams:
     - Low bifurcation angle threshold for frequent splits
     - High bifurcation probability
     - Minimal directional bias for organic growth
+    
+    Units: All spatial parameters in millimeters.
     """
     return SpaceColonizationParams(
-        influence_radius=0.025,  # 25mm - large influence for many attractions
-        kill_radius=0.002,  # 2mm - small kill radius
-        step_size=0.005,  # 5mm - moderate steps
-        min_radius=0.0003,  # 0.3mm
+        influence_radius=25.0,  # 25mm - large influence for many attractions
+        kill_radius=2.0,  # 2mm - small kill radius
+        step_size=5.0,  # 5mm - moderate steps
+        min_radius=0.3,  # 0.3mm
         taper_factor=0.95,
         vessel_type="arterial",
         max_steps=200,
