@@ -7,3 +7,4 @@ scipy>=1.6.0
 scikit-image>=0.18.0
 matplotlib>=3.3.0
 cadquery>=2.0
+tqdm>=4.60.0
