@@ -2,12 +2,68 @@
 Full network flow solver using scipy.sparse.
 
 Wraps the existing vascular_network package solver for integration.
+
+Note: The solver internally uses SI units (meters) for physics calculations.
+Input geometry is assumed to be in millimeters and is converted to meters internally.
 """
 
 import numpy as np
 from typing import Dict, List, Optional, Tuple
 from ..core.network import VascularNetwork
 from ..core.result import OperationResult, OperationStatus, ErrorCode
+from ..utils.units import to_si_length, CANONICAL_UNIT
+
+
+def _convert_network_to_si(network: VascularNetwork, from_units: str) -> VascularNetwork:
+    """
+    Create a copy of network with geometry converted to SI (meters).
+    
+    This is used internally by the flow solver to ensure correct physics.
+    
+    Parameters
+    ----------
+    network : VascularNetwork
+        Original network (in mm, cm, or m)
+    from_units : str
+        Units of original network geometry
+        
+    Returns
+    -------
+    VascularNetwork
+        Copy of network with geometry in meters
+    """
+    import copy
+    from ..core.types import Point3D, TubeGeometry
+    
+    if from_units == "m":
+        return network
+    
+    network_si = copy.deepcopy(network)
+    
+    for node in network_si.nodes.values():
+        node.position = Point3D(
+            x=to_si_length(node.position.x, from_units),
+            y=to_si_length(node.position.y, from_units),
+            z=to_si_length(node.position.z, from_units),
+        )
+    
+    for seg in network_si.segments.values():
+        seg.geometry = TubeGeometry(
+            start=Point3D(
+                x=to_si_length(seg.geometry.start.x, from_units),
+                y=to_si_length(seg.geometry.start.y, from_units),
+                z=to_si_length(seg.geometry.start.z, from_units),
+            ),
+            end=Point3D(
+                x=to_si_length(seg.geometry.end.x, from_units),
+                y=to_si_length(seg.geometry.end.y, from_units),
+                z=to_si_length(seg.geometry.end.z, from_units),
+            ),
+            radius_start=to_si_length(seg.geometry.radius_start, from_units),
+            radius_end=to_si_length(seg.geometry.radius_end, from_units),
+        )
+    
+    return network_si
 
 
 def solve_flow(
@@ -18,6 +74,7 @@ def solve_flow(
     pout: float = 2000.0,
     mu: float = 1.0e-3,
     write_to_network: bool = True,
+    geometry_units: str = CANONICAL_UNIT,
 ) -> OperationResult:
     """
     Solve flow through the vascular network using full Poiseuille solver.
@@ -25,10 +82,13 @@ def solve_flow(
     This wraps the existing vascular_network.analysis.cfd.compute_poiseuille_network
     function, converting to/from NetworkX format.
     
+    **Units**: Network geometry is assumed to be in millimeters (default).
+    The solver internally converts to SI units (meters) for physics calculations.
+    
     Parameters
     ----------
     network : VascularNetwork
-        The vascular network
+        The vascular network (geometry in millimeters by default)
     inlet_node_ids : list of int, optional
         Inlet node IDs. If None, auto-detect from node_type
     outlet_node_ids : list of int, optional
@@ -41,11 +101,18 @@ def solve_flow(
         Dynamic viscosity (Pa·s). Default for blood at 37°C
     write_to_network : bool
         Whether to write results back to network node/segment attributes
+    geometry_units : str
+        Units of network geometry ('mm', 'm', 'cm'). Default: 'mm'
         
     Returns
     -------
     OperationResult
         Result with flow solution in metadata
+        
+    Notes
+    -----
+    The solver uses Poiseuille's law: R = 8*mu*L/(pi*r^4)
+    All lengths and radii are converted to meters (SI) internally for correct physics.
     """
     from ..adapters.networkx_adapter import to_networkx_graph
     from vascular_network.analysis.cfd import compute_poiseuille_network
@@ -75,12 +142,14 @@ def solve_flow(
                 error_codes=[ErrorCode.NODE_NOT_FOUND.value],
             )
         
-        G, node_id_map = to_networkx_graph(network)
+        # The vascular_network solver expects meters
+        network_si = _convert_network_to_si(network, geometry_units)
+        
+        G, node_id_map = to_networkx_graph(network_si)
         
         inlet_nx = [node_id_map[nid] for nid in inlet_node_ids]
         outlet_nx = [node_id_map[nid] for nid in outlet_node_ids]
         
-        # Solve
         flow_result = compute_poiseuille_network(
             G,
             mu=mu,
@@ -110,8 +179,10 @@ def solve_flow(
                     if ((seg.start_node_id == u_vascular and seg.end_node_id == v_vascular) or
                         (seg.start_node_id == v_vascular and seg.end_node_id == u_vascular)):
                         seg.attributes['flow'] = float(abs(flow))
+                        radius_mm = (seg.geometry.radius_start + seg.geometry.radius_end) / 2
+                        radius_m = to_si_length(radius_mm, geometry_units)
                         seg.attributes['velocity'] = float(
-                            abs(flow) / (np.pi * ((seg.geometry.radius_start + seg.geometry.radius_end) / 2) ** 2)
+                            abs(flow) / (np.pi * radius_m ** 2)
                         )
                         break
         
@@ -272,7 +343,10 @@ def compute_component_flows(network: VascularNetwork) -> Dict:
     }
 
 
-def check_flow_plausibility(network: VascularNetwork) -> OperationResult:
+def check_flow_plausibility(
+    network: VascularNetwork,
+    geometry_units: str = CANONICAL_UNIT,
+) -> OperationResult:
     """
     Check if flow solution is hemodynamically plausible.
     
@@ -286,6 +360,8 @@ def check_flow_plausibility(network: VascularNetwork) -> OperationResult:
     ----------
     network : VascularNetwork
         Network with solved flow (must have 'pressure' and 'flow' attributes)
+    geometry_units : str
+        Units of network geometry ('mm', 'm', 'cm'). Default: 'mm'
         
     Returns
     -------
@@ -335,12 +411,13 @@ def check_flow_plausibility(network: VascularNetwork) -> OperationResult:
     max_re = 0.0
     for seg in network.segments.values():
         velocity = seg.attributes.get('velocity', 0)
-        radius = (seg.geometry.radius_start + seg.geometry.radius_end) / 2
-        diameter = 2 * radius
+        radius_input = (seg.geometry.radius_start + seg.geometry.radius_end) / 2
+        radius_m = to_si_length(radius_input, geometry_units)
+        diameter_m = 2 * radius_m
         
         rho = 1060.0  # kg/m³ for blood
         mu = 1.0e-3  # Pa·s
-        re = rho * velocity * diameter / mu
+        re = rho * velocity * diameter_m / mu
         max_re = max(max_re, re)
         
         if re > 2300:
