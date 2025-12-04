@@ -167,6 +167,37 @@ def brain_arterial() -> SpaceColonizationParams:
     )
 
 
+def dense_bifurcation() -> SpaceColonizationParams:
+    """
+    Dense bifurcating tree with aggressive branching.
+    
+    Characteristics:
+    - Large influence radius to attract many tissue points
+    - Small kill radius for fine perfusion
+    - Low bifurcation angle threshold for frequent splits
+    - High bifurcation probability
+    - Minimal directional bias for organic growth
+    """
+    return SpaceColonizationParams(
+        influence_radius=0.025,  # 25mm - large influence for many attractions
+        kill_radius=0.002,  # 2mm - small kill radius
+        step_size=0.005,  # 5mm - moderate steps
+        min_radius=0.0003,  # 0.3mm
+        taper_factor=0.95,
+        vessel_type="arterial",
+        max_steps=200,
+        max_curvature_deg=None,  # No curvature constraint for organic growth
+        min_clearance=None,  # No clearance check for denser packing
+        encourage_bifurcation=True,
+        min_attractions_for_bifurcation=2,  # Lower threshold
+        max_children_per_node=2,
+        bifurcation_angle_threshold_deg=20.0,  # Lower angle threshold
+        bifurcation_probability=0.9,  # High probability
+        directional_bias=0.0,  # No directional bias
+        smoothing_weight=0.0,  # No smoothing for more organic branching
+    )
+
+
 PRESETS = {
     "liver_arterial_dense": liver_arterial_dense,
     "liver_venous_sparse": liver_venous_sparse,
@@ -174,6 +205,7 @@ PRESETS = {
     "sparse_debug": sparse_debug,
     "lung_arterial": lung_arterial,
     "brain_arterial": brain_arterial,
+    "dense_bifurcation": dense_bifurcation,
 }
 
 
