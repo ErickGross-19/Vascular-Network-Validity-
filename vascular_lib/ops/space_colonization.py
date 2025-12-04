@@ -23,6 +23,7 @@ class SpaceColonizationParams:
     taper_factor: float = 0.95  # Radius reduction per generation
     vessel_type: str = "arterial"
     max_steps: int = 100  # Maximum growth steps per call
+    grow_from_terminals_only: bool = False  # If True, only grow from terminal nodes (not inlet/outlet)
     
     preferred_direction: Optional[tuple] = None  # (x, y, z) preferred growth direction
     directional_bias: float = 0.0  # 0-1: weight for preferred direction (0=pure attraction, 1=pure directional)
@@ -60,6 +61,7 @@ class SpaceColonizationParams:
             "bifurcation_probability": self.bifurcation_probability,
             "max_curvature_deg": self.max_curvature_deg,
             "min_clearance": self.min_clearance,
+            "grow_from_terminals_only": self.grow_from_terminals_only,
         }
     
     @classmethod
@@ -84,6 +86,7 @@ class SpaceColonizationParams:
             bifurcation_probability=d.get("bifurcation_probability", 0.7),
             max_curvature_deg=d.get("max_curvature_deg"),
             min_clearance=d.get("min_clearance"),
+            grow_from_terminals_only=d.get("grow_from_terminals_only", False),
         )
 
 
