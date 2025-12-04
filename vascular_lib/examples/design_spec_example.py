@@ -81,7 +81,8 @@ def example_2_custom_colonization_params():
     )
     
     spec = TreeSpec(
-        domain=DomainSpec.box(
+        domain=DomainSpec(
+            type="box",
             center=(0.0, 0.0, 0.0),
             size=(0.20, 0.15, 0.10),  # 20cm x 15cm x 10cm box
         ),
@@ -118,7 +119,8 @@ def example_3_dual_tree_design():
     print("=" * 70)
     
     spec = DualTreeSpec(
-        domain=DomainSpec.ellipsoid(
+        domain=DomainSpec(
+            type="ellipsoid",
             semi_axes=(0.10, 0.08, 0.06),  # 10cm x 8cm x 6cm
         ),
         arterial_inlet={"position": (-0.08, 0.0, 0.0), "radius": 0.004},
