@@ -6,6 +6,7 @@ from .collision import get_collisions, avoid_collisions
 from .space_colonization import space_colonization_step, SpaceColonizationParams
 from .anastomosis import create_anastomosis, check_tree_interactions
 from .pathfinding import grow_toward_targets, CostWeights
+from .embedding import embed_tree_as_negative_space
 
 __all__ = [
     "create_network",
@@ -21,4 +22,5 @@ __all__ = [
     "check_tree_interactions",
     "grow_toward_targets",
     "CostWeights",
+    "embed_tree_as_negative_space",
 ]
