@@ -9,7 +9,7 @@ This demonstrates the high-level DesignSpec API which allows LLMs to:
 """
 
 from vascular_lib.api import design_from_spec, evaluate_network
-from vascular_lib.specs import TreeSpec, DualTreeSpec, DomainSpec, ColonizationSpec
+from vascular_lib.specs import TreeSpec, DualTreeSpec, EllipsoidSpec, BoxSpec, ColonizationSpec
 from vascular_lib.params import get_preset
 from vascular_lib.io import save_json
 
@@ -21,7 +21,7 @@ def example_1_single_tree_with_preset():
     print("=" * 70)
     
     spec = TreeSpec(
-        domain=DomainSpec.ellipsoid(
+        domain=EllipsoidSpec(
             semi_axes=(0.12, 0.10, 0.08),  # 12cm x 10cm x 8cm liver
         ),
         inlet={"position": (-0.10, 0.0, 0.0), "radius": 0.005},
@@ -166,7 +166,7 @@ def example_4_iterative_refinement():
     print("=" * 70)
     
     spec = TreeSpec(
-        domain=DomainSpec.ellipsoid(semi_axes=(0.10, 0.08, 0.06)),
+        domain=EllipsoidSpec(semi_axes=(0.10, 0.08, 0.06)),
         inlet={"position": (-0.08, 0.0, 0.0), "radius": 0.004},
         colonization=get_preset("sparse_debug"),  # Start sparse for speed
         tissue_points=100,
@@ -216,7 +216,7 @@ def example_5_spec_serialization():
     print("=" * 70)
     
     spec = TreeSpec(
-        domain=DomainSpec.ellipsoid(semi_axes=(0.12, 0.10, 0.08)),
+        domain=EllipsoidSpec(semi_axes=(0.12, 0.10, 0.08)),
         inlet={"position": (-0.10, 0.0, 0.0), "radius": 0.005},
         colonization=get_preset("liver_arterial_dense"),
         tissue_points=200,
