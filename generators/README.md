@@ -1,6 +1,8 @@
 # Vascular Network Generators
 
-This package contains tools for generating synthetic vascular networks with realistic topology and geometry.
+This package contains standalone tools for generating synthetic vascular networks with realistic topology and geometry.
+
+**Note**: This package is intentionally separate from `vascular_lib`. While `vascular_lib` provides a composable LLM-friendly API for iterative network design, `generators` provides complete organ-specific network generation with its own simplified data structures. The two packages serve different purposes and can be used independently or together.
 
 ## Liver Vascular Network Generator
 
