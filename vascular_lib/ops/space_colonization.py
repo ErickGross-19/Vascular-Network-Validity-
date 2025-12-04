@@ -93,6 +93,7 @@ def space_colonization_step(
     params: Optional[SpaceColonizationParams] = None,
     constraints: Optional[BranchingConstraints] = None,
     seed: Optional[int] = None,
+    seed_nodes: Optional[List[str]] = None,
 ) -> OperationResult:
     """
     Perform space colonization growth step.
@@ -112,6 +113,9 @@ def space_colonization_step(
         Branching constraints
     seed : int, optional
         Random seed
+    seed_nodes : List[str], optional
+        List of node IDs to use as seed nodes for growth. If None, uses all
+        inlet/outlet nodes of the specified vessel type (default behavior)
     
     Returns
     -------
@@ -134,11 +138,17 @@ def space_colonization_step(
     
     rng = np.random.default_rng(seed) if seed is not None else network.id_gen.rng
     
-    terminal_nodes = [
-        node for node in network.nodes.values()
-        if node.node_type in ("terminal", "inlet", "outlet") and
-        node.vessel_type == params.vessel_type
-    ]
+    if seed_nodes is not None:
+        terminal_nodes = [
+            network.nodes[node_id] for node_id in seed_nodes
+            if node_id in network.nodes and network.nodes[node_id].vessel_type == params.vessel_type
+        ]
+    else:
+        terminal_nodes = [
+            node for node in network.nodes.values()
+            if node.node_type in ("terminal", "inlet", "outlet") and
+            node.vessel_type == params.vessel_type
+        ]
     
     if not terminal_nodes:
         return OperationResult.failure(
@@ -162,11 +172,19 @@ def space_colonization_step(
             pbar.close()
             break
         
-        terminal_nodes = [
-            node for node in network.nodes.values()
-            if node.node_type in ("terminal", "inlet", "outlet") and
-            node.vessel_type == params.vessel_type
-        ]
+        if seed_nodes is not None:
+            terminal_nodes = [
+                node for node in network.nodes.values()
+                if (node.id in seed_nodes or node.id in new_node_ids) and
+                node.node_type in ("terminal", "inlet", "outlet") and
+                node.vessel_type == params.vessel_type
+            ]
+        else:
+            terminal_nodes = [
+                node for node in network.nodes.values()
+                if node.node_type in ("terminal", "inlet", "outlet") and
+                node.vessel_type == params.vessel_type
+            ]
         
         attractions = {node.id: [] for node in terminal_nodes}
         
