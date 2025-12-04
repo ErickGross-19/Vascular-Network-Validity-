@@ -26,7 +26,8 @@ from vascular_lib.analysis import (
     compute_perfusion_metrics,
     suggest_anastomosis_locations,
 )
-from vascular_lib.io import save_network_json
+from vascular_lib.io import save_json as save_network_json
+
 
 
 def main():
