@@ -236,6 +236,96 @@ def space_colonization_step(
                 continue
             
             attracted_points = [tissue_points_list[idx] for idx in attractions[node.id]]
+            num_attractions = len(attracted_points)
+            
+            # Check if bifurcation conditions are met
+            should_bifurcate = (
+                params.encourage_bifurcation and
+                num_attractions >= params.min_attractions_for_bifurcation
+            )
+            
+            if should_bifurcate:
+                # Compute attraction vectors
+                attraction_vectors = []
+                for tp in attracted_points:
+                    direction = np.array([
+                        tp.x - node.position.x,
+                        tp.y - node.position.y,
+                        tp.z - node.position.z,
+                    ])
+                    direction_norm = np.linalg.norm(direction)
+                    if direction_norm > 1e-10:
+                        attraction_vectors.append(direction / direction_norm)
+                
+                if len(attraction_vectors) >= 2:
+                    angle_spread = _compute_angle_spread(attraction_vectors)
+                    
+                    if angle_spread >= params.bifurcation_angle_threshold_deg:
+                        if rng.random() < params.bifurcation_probability:
+                            # Cluster attractions
+                            clusters = _cluster_attractions_by_angle(
+                                attraction_vectors,
+                                max_clusters=min(params.max_children_per_node, len(attraction_vectors))
+                            )
+                            
+                            parent_radius = node.attributes.get("radius", params.min_radius * 2)
+                            
+                            n_children = len(clusters)
+                            if n_children > 1:
+                                child_radii = [parent_radius * (1.0 / n_children) ** (1.0/3.0) * params.taper_factor 
+                                             for _ in range(n_children)]
+                            else:
+                                child_radii = [parent_radius * params.taper_factor]
+                            
+                            from .growth import grow_branch
+                            for cluster_idx, cluster in enumerate(clusters):
+                                if cluster_idx >= params.max_children_per_node:
+                                    break
+                                
+                                # Compute average direction for this cluster
+                                cluster_direction = np.mean([attraction_vectors[i] for i in cluster], axis=0)
+                                cluster_direction = cluster_direction / np.linalg.norm(cluster_direction)
+                                
+                                # Apply directional blending and curvature constraints
+                                cluster_direction = _apply_directional_blending(cluster_direction, node, params)
+                                cluster_direction = _apply_curvature_constraint(cluster_direction, node, params)
+                                
+                                growth_direction = Direction3D.from_array(cluster_direction)
+                                
+                                # Check clearance
+                                new_pos = Point3D(
+                                    node.position.x + growth_direction.dx * params.step_size,
+                                    node.position.y + growth_direction.dy * params.step_size,
+                                    node.position.z + growth_direction.dz * params.step_size,
+                                )
+                                
+                                if not _check_clearance(new_pos, network, node.id, params):
+                                    continue
+                                
+                                new_radius = child_radii[cluster_idx]
+                                if new_radius < params.min_radius:
+                                    continue
+                                
+                                result = grow_branch(
+                                    network,
+                                    from_node_id=node.id,
+                                    length=params.step_size,
+                                    direction=growth_direction,
+                                    target_radius=new_radius,
+                                    constraints=constraints,
+                                    check_collisions=True,
+                                    seed=seed,
+                                )
+                                
+                                if result.is_success():
+                                    new_node_ids.append(result.new_ids["node"])
+                                    new_segment_ids.append(result.new_ids["segment"])
+                                    grown_any = True
+                                else:
+                                    warnings.extend(result.errors)
+                            
+                            continue
+            
             avg_direction = np.zeros(3)
             
             for tp in attracted_points:
@@ -253,59 +343,11 @@ def space_colonization_step(
             
             avg_direction = avg_direction / np.linalg.norm(avg_direction)
             
-            if params.preferred_direction is not None and params.directional_bias > 0:
-                d_pref = np.array(params.preferred_direction)
-                d_pref = d_pref / np.linalg.norm(d_pref)
-                
-                d_prev = None
-                if "direction" in node.attributes and params.smoothing_weight > 0:
-                    prev_dir = Direction3D.from_dict(node.attributes["direction"])
-                    d_prev = prev_dir.to_array()
-                
-                # Blend attraction, preferred direction, and previous direction
-                v_attr = avg_direction
-                beta = params.directional_bias
-                w_prev = params.smoothing_weight if d_prev is not None else 0.0
-                
-                if d_prev is not None:
-                    blended = (1 - beta - w_prev) * v_attr + beta * d_pref + w_prev * d_prev
-                else:
-                    blended = (1 - beta) * v_attr + beta * d_pref
-                
-                blended_norm = np.linalg.norm(blended)
-                if blended_norm > 1e-10:
-                    blended = blended / blended_norm
-                else:
-                    blended = d_pref
-                
-                if params.max_deviation_deg < 180.0:
-                    angle_to_pref = np.arccos(np.clip(np.dot(blended, d_pref), -1.0, 1.0))
-                    max_angle_rad = np.radians(params.max_deviation_deg)
-                    
-                    if angle_to_pref > max_angle_rad:
-                        axis = np.cross(blended, d_pref)
-                        axis_norm = np.linalg.norm(axis)
-                        
-                        if axis_norm > 1e-10:
-                            axis = axis / axis_norm
-                            rotation_angle = angle_to_pref - max_angle_rad
-                            cos_rot = np.cos(rotation_angle)
-                            sin_rot = np.sin(rotation_angle)
-                            
-                            blended = (blended * cos_rot +
-                                     np.cross(axis, blended) * sin_rot +
-                                     axis * np.dot(axis, blended) * (1 - cos_rot))
-                            blended = blended / np.linalg.norm(blended)
-                        else:
-                            blended = d_pref
-                
-                avg_direction = blended
-            
+            avg_direction = _apply_directional_blending(avg_direction, node, params)
             avg_direction = _apply_curvature_constraint(avg_direction, node, params)
             
             growth_direction = Direction3D.from_array(avg_direction)
             
-            # Check clearance before growing (B3)
             new_pos = Point3D(
                 node.position.x + growth_direction.dx * params.step_size,
                 node.position.y + growth_direction.dy * params.step_size,
@@ -313,7 +355,7 @@ def space_colonization_step(
             )
             
             if not _check_clearance(new_pos, network, node.id, params):
-                continue  # Skip this growth due to clearance violation
+                continue
             
             parent_radius = node.attributes.get("radius", params.min_radius * 2)
             new_radius = parent_radius * params.taper_factor
