@@ -146,6 +146,18 @@ def space_colonization_step(
             network.nodes[node_id] for node_id in seed_nodes
             if node_id in network.nodes and network.nodes[node_id].vessel_type == params.vessel_type
         ]
+        if params.grow_from_terminals_only:
+            terminal_nodes = [
+                node for node in terminal_nodes
+                if node.node_type == "terminal"
+            ]
+    elif params.grow_from_terminals_only:
+        # Only grow from terminal nodes (exclude inlet/outlet)
+        terminal_nodes = [
+            node for node in network.nodes.values()
+            if node.node_type == "terminal" and
+            node.vessel_type == params.vessel_type
+        ]
     else:
         terminal_nodes = [
             node for node in network.nodes.values()
@@ -180,6 +192,18 @@ def space_colonization_step(
                 node for node in network.nodes.values()
                 if (node.id in seed_nodes or node.id in new_node_ids) and
                 node.node_type in ("terminal", "inlet", "outlet") and
+                node.vessel_type == params.vessel_type
+            ]
+            if params.grow_from_terminals_only:
+                terminal_nodes = [
+                    node for node in terminal_nodes
+                    if node.node_type == "terminal"
+                ]
+        elif params.grow_from_terminals_only:
+            # Only grow from terminal nodes (exclude inlet/outlet)
+            terminal_nodes = [
+                node for node in network.nodes.values()
+                if node.node_type == "terminal" and
                 node.vessel_type == params.vessel_type
             ]
         else:
