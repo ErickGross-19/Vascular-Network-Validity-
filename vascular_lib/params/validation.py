@@ -2,6 +2,8 @@
 
 This module provides validation for SpaceColonizationParams to ensure
 parameters are within reasonable ranges and catch common mistakes.
+
+Units: All spatial parameters are in millimeters.
 """
 
 from typing import List, Tuple
@@ -9,10 +11,10 @@ from ..ops.space_colonization import SpaceColonizationParams
 
 
 PARAM_BOUNDS = {
-    "influence_radius": (0.001, 0.100, "m"),  # 1mm to 100mm
-    "kill_radius": (0.0001, 0.050, "m"),  # 0.1mm to 50mm
-    "step_size": (0.0001, 0.050, "m"),  # 0.1mm to 50mm
-    "min_radius": (0.00001, 0.010, "m"),  # 0.01mm to 10mm
+    "influence_radius": (1.0, 100.0, "mm"),  # 1mm to 100mm
+    "kill_radius": (0.1, 50.0, "mm"),  # 0.1mm to 50mm
+    "step_size": (0.1, 50.0, "mm"),  # 0.1mm to 50mm
+    "min_radius": (0.01, 10.0, "mm"),  # 0.01mm to 10mm
     "taper_factor": (0.5, 1.0, "ratio"),  # 50% to 100%
     "max_steps": (1, 1000, "steps"),
     "directional_bias": (0.0, 1.0, "ratio"),
@@ -23,7 +25,7 @@ PARAM_BOUNDS = {
     "bifurcation_angle_threshold_deg": (0.0, 180.0, "degrees"),
     "bifurcation_probability": (0.0, 1.0, "probability"),
     "max_curvature_deg": (0.0, 180.0, "degrees"),
-    "min_clearance": (0.0, 0.100, "m"),  # 0 to 100mm
+    "min_clearance": (0.0, 100.0, "mm"),  # 0 to 100mm
 }
 
 
@@ -62,18 +64,18 @@ def validate_params(params: SpaceColonizationParams) -> Tuple[bool, List[str]]:
     
     if params.kill_radius >= params.influence_radius:
         warnings.append(
-            f"kill_radius ({params.kill_radius}m) should be < influence_radius ({params.influence_radius}m)"
+            f"kill_radius ({params.kill_radius}mm) should be < influence_radius ({params.influence_radius}mm)"
         )
     
     if params.step_size > params.influence_radius:
         warnings.append(
-            f"step_size ({params.step_size}m) is larger than influence_radius ({params.influence_radius}m), "
+            f"step_size ({params.step_size}mm) is larger than influence_radius ({params.influence_radius}mm), "
             "which may cause poor coverage"
         )
     
     if params.min_radius > params.step_size:
         warnings.append(
-            f"min_radius ({params.min_radius}m) is larger than step_size ({params.step_size}m), "
+            f"min_radius ({params.min_radius}mm) is larger than step_size ({params.step_size}mm), "
             "which may prevent growth"
         )
     
@@ -109,8 +111,8 @@ def validate_params(params: SpaceColonizationParams) -> Tuple[bool, List[str]]:
     
     if params.min_clearance is not None and params.min_clearance > params.influence_radius:
         warnings.append(
-            f"min_clearance ({params.min_clearance}m) is larger than influence_radius "
-            f"({params.influence_radius}m), which may prevent all growth"
+            f"min_clearance ({params.min_clearance}mm) is larger than influence_radius "
+            f"({params.influence_radius}mm), which may prevent all growth"
         )
     
     is_valid = len(warnings) == 0
