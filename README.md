@@ -75,25 +75,54 @@ Additional dependencies for specific components:
 
 ## 🚀 Quick Start Examples
 
-### End-to-End Workflow
+### End-to-End Workflow (High-Level API - Recommended)
+
+```python
+# 1. Design a network with vascular_lib using DesignSpec
+from vascular_lib.api import design_from_spec, evaluate_network, run_experiment
+from vascular_lib.specs import TreeSpec, DomainSpec
+from vascular_lib.params import get_preset
+
+# Define network design as JSON spec
+spec = TreeSpec(
+    domain=DomainSpec.ellipsoid(semi_axes=(0.12, 0.10, 0.08)),
+    inlet={"position": (-0.10, 0.0, 0.0), "radius": 0.005},
+    colonization=get_preset("liver_arterial_dense"),
+    tissue_points=200,
+    seed=42,
+)
+
+# Build network from spec
+network = design_from_spec(spec)
+
+# Evaluate network quality
+eval_result = evaluate_network(network, tissue_points=1000)
+print(f"Coverage: {eval_result.metrics.coverage_fraction:.1%}")
+print(f"Overall score: {eval_result.scores.overall_score:.2f}")
+
+# Or run complete experiment with one call
+result = run_experiment(spec, output_dir="output/my_network")
+# Generates: network.json, network.stl, eval_report.json, spec.json
+```
+
+### End-to-End Workflow (Low-Level API)
 
 ```python
 # 1. Design a network with vascular_lib
-from vascular_lib import create_network, space_colonization_step
+from vascular_lib import create_network, add_inlet, space_colonization_step
 from vascular_lib.core import EllipsoidDomain
+from vascular_lib.params import get_preset
 import numpy as np
 
 domain = EllipsoidDomain(semi_axis_a=0.12, semi_axis_b=0.1, semi_axis_c=0.08)
 network = create_network(domain, seed=42)
 
-# Add inlet and grow network
-from vascular_lib import add_inlet
+# Add inlet
 add_inlet(network, position=(-0.10, 0, 0), direction=(1, 0, 0), radius=0.005)
 
-# Use space colonization for organic growth
-tissue_points = np.random.uniform(-0.1, 0.1, (200, 3))
-from vascular_lib.ops import space_colonization_step, SpaceColonizationParams
-params = SpaceColonizationParams(vessel_type="arterial")
+# Use space colonization with preset parameters
+tissue_points = domain.sample_points(n_points=200, seed=42)
+params = get_preset("liver_arterial_dense")
 space_colonization_step(network, tissue_points, params, seed=42)
 
 # 2. Export to STL
