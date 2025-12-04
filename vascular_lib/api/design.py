@@ -59,7 +59,7 @@ def design_from_spec(spec: DesignSpec) -> VascularNetwork:
             step_size=col_spec.step_size,
             max_steps=col_spec.max_steps,
             min_radius=col_spec.min_radius,
-            taper_factor=col_spec.radius_decay,
+            taper_factor=col_spec.radius_decay if hasattr(col_spec, 'radius_decay') else 0.95,
             vessel_type=tree.inlets[0].vessel_type if tree.inlets else "arterial",
             preferred_direction=col_spec.preferred_direction,
             directional_bias=col_spec.directional_bias,
