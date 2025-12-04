@@ -121,21 +121,26 @@ def embed_tree_as_negative_space(
     
     grid_shape = np.maximum(grid_shape, 10)
     
-    print(f"Creating voxel grid: {grid_shape} voxels")
+    padding = 2
+    grid_shape_padded = grid_shape + 2 * padding
+    domain_min_padded = domain_min - padding * voxel_pitch
+    
+    print(f"Creating voxel grid: {grid_shape_padded} voxels (with {padding}-voxel padding)")
     print(f"Domain bounds: {domain_min} to {domain_max}")
+    print(f"Padded bounds: {domain_min_padded} to {domain_min_padded + grid_shape_padded * voxel_pitch}")
     print(f"Voxel pitch: {voxel_pitch}")
     
-    domain_mask = np.zeros(grid_shape, dtype=bool)
+    domain_mask = np.zeros(grid_shape_padded, dtype=bool)
     
     if isinstance(domain, BoxDomain):
-        domain_mask[:, :, :] = True
+        domain_mask[padding:-padding, padding:-padding, padding:-padding] = True
     elif isinstance(domain, EllipsoidDomain):
-        center = np.array([domain.center_x, domain.center_y, domain.center_z])
-        radii = np.array([domain.radius_x, domain.radius_y, domain.radius_z])
+        center = np.array([domain.center.x, domain.center.y, domain.center.z])
+        radii = np.array([domain.semi_axis_a, domain.semi_axis_b, domain.semi_axis_c])
         
-        x = np.linspace(domain_min[0], domain_max[0], grid_shape[0])
-        y = np.linspace(domain_min[1], domain_max[1], grid_shape[1])
-        z = np.linspace(domain_min[2], domain_max[2], grid_shape[2])
+        x = np.linspace(domain_min_padded[0], domain_min_padded[0] + grid_shape_padded[0] * voxel_pitch, grid_shape_padded[0])
+        y = np.linspace(domain_min_padded[1], domain_min_padded[1] + grid_shape_padded[1] * voxel_pitch, grid_shape_padded[1])
+        z = np.linspace(domain_min_padded[2], domain_min_padded[2] + grid_shape_padded[2] * voxel_pitch, grid_shape_padded[2])
         
         xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
         
@@ -153,9 +158,9 @@ def embed_tree_as_negative_space(
     
     tree_origin = tree_voxels.transform[:3, 3]
     
-    offset_voxels = np.round((tree_origin - domain_min) / voxel_pitch).astype(int)
+    offset_voxels = np.round((tree_origin - domain_min_padded) / voxel_pitch).astype(int)
     
-    aligned_tree_mask = np.zeros(grid_shape, dtype=bool)
+    aligned_tree_mask = np.zeros(grid_shape_padded, dtype=bool)
     
     tree_shape = np.array(tree_mask.shape)
     
@@ -164,7 +169,7 @@ def embed_tree_as_negative_space(
     
     copy_size = np.minimum(
         tree_shape - src_start,  # Remaining tree voxels from src_start
-        grid_shape - dst_start   # Remaining domain voxels from dst_start
+        grid_shape_padded - dst_start   # Remaining domain voxels from dst_start
     )
     
     copy_size = np.maximum(copy_size, 0)
@@ -215,7 +220,7 @@ def embed_tree_as_negative_space(
         
         verts = verts[:, [2, 1, 0]]
         
-        verts += domain_min
+        verts += domain_min_padded
         
         domain_mesh = trimesh.Trimesh(
             vertices=verts,
@@ -251,7 +256,7 @@ def embed_tree_as_negative_space(
         
         verts = verts[:, [2, 1, 0]]
         
-        verts += domain_min
+        verts += domain_min_padded
         
         void_mesh = trimesh.Trimesh(
             vertices=verts,
@@ -291,7 +296,7 @@ def embed_tree_as_negative_space(
             
             verts = verts[:, [2, 1, 0]]
             
-            verts += domain_min
+            verts += domain_min_padded
             
             shell_mesh = trimesh.Trimesh(
                 vertices=verts,
@@ -320,10 +325,14 @@ def embed_tree_as_negative_space(
     
     result['metadata'] = {
         'voxel_pitch': voxel_pitch,
-        'grid_shape': grid_shape.tolist(),
+        'grid_shape': grid_shape_padded.tolist(),
         'domain_bounds': {
             'min': domain_min.tolist(),
             'max': domain_max.tolist(),
+        },
+        'padded_bounds': {
+            'min': domain_min_padded.tolist(),
+            'max': (domain_min_padded + grid_shape_padded * voxel_pitch).tolist(),
         },
         'tree_bounds': {
             'min': tree_min.tolist(),
