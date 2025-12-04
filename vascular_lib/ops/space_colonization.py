@@ -462,38 +462,73 @@ def _cluster_attractions_by_angle(
     max_clusters: int = 2,
 ) -> List[List[int]]:
     """
-    Cluster attraction vectors into groups using simple angle-based two-means.
+    Cluster attraction vectors into groups using k-means with farthest-first initialization.
     
     Returns list of cluster indices (each cluster is a list of vector indices).
     """
-    if len(attraction_vectors) <= 1:
-        return [[i] for i in range(len(attraction_vectors))]
+    n = len(attraction_vectors)
     
-    if max_clusters == 1 or len(attraction_vectors) <= max_clusters:
-        return [[i for i in range(len(attraction_vectors))]]
+    if n == 0:
+        return []
+    if n == 1:
+        return [[0]]
+    if max_clusters <= 1:
+        return [[i for i in range(n)]]
     
-    # Initialize centroids: pick two most separated vectors
-    max_sep = -1.0
-    seed_i, seed_j = 0, 1
-    for i in range(len(attraction_vectors)):
-        for j in range(i + 1, len(attraction_vectors)):
-            sep = 1.0 - np.dot(attraction_vectors[i], attraction_vectors[j])
-            if sep > max_sep:
-                max_sep = sep
-                seed_i, seed_j = i, j
+    normalized_vectors = []
+    for vec in attraction_vectors:
+        norm = np.linalg.norm(vec)
+        if norm > 1e-10:
+            normalized_vectors.append(vec / norm)
+        else:
+            normalized_vectors.append(vec)
     
-    centroids = [attraction_vectors[seed_i].copy(), attraction_vectors[seed_j].copy()]
+    if n <= max_clusters:
+        return [[i] for i in range(n)]
     
-    # Iterative assignment (max 10 iterations)
-    for iteration in range(10):
-        clusters = [[] for _ in range(max_clusters)]
+    K = min(max_clusters, n)
+    
+    # Farthest-first initialization for K centroids
+    centroids = []
+    centroid_indices = []
+    
+    centroids.append(normalized_vectors[0].copy())
+    centroid_indices.append(0)
+    
+    for _ in range(K - 1):
+        max_min_dist = -1.0
+        farthest_idx = 0
         
-        # Assign each vector to nearest centroid
-        for idx, vec in enumerate(attraction_vectors):
+        for i in range(n):
+            if i in centroid_indices:
+                continue
+            
+            # Find minimum distance (maximum similarity) to existing centroids
+            min_sim = 1.0
+            for centroid in centroids:
+                sim = np.dot(normalized_vectors[i], centroid)
+                if sim < min_sim:
+                    min_sim = sim
+            
+            # Distance metric: 1 - similarity (higher is more separated)
+            min_dist = 1.0 - min_sim
+            
+            if min_dist > max_min_dist:
+                max_min_dist = min_dist
+                farthest_idx = i
+        
+        centroids.append(normalized_vectors[farthest_idx].copy())
+        centroid_indices.append(farthest_idx)
+    
+    for iteration in range(10):
+        clusters = [[] for _ in range(K)]
+        
+        # Assign each vector to nearest centroid (highest dot product)
+        for idx, vec in enumerate(normalized_vectors):
             best_cluster = 0
             best_sim = np.dot(vec, centroids[0])
             
-            for c in range(1, max_clusters):
+            for c in range(1, K):
                 sim = np.dot(vec, centroids[c])
                 if sim > best_sim:
                     best_sim = sim
@@ -503,14 +538,17 @@ def _cluster_attractions_by_angle(
         
         # Update centroids
         changed = False
-        for c in range(max_clusters):
+        for c in range(K):
             if clusters[c]:
-                new_centroid = np.mean([attraction_vectors[idx] for idx in clusters[c]], axis=0)
-                new_centroid = new_centroid / np.linalg.norm(new_centroid)
+                new_centroid = np.mean([normalized_vectors[idx] for idx in clusters[c]], axis=0)
+                centroid_norm = np.linalg.norm(new_centroid)
                 
-                if np.linalg.norm(new_centroid - centroids[c]) > 1e-6:
-                    changed = True
-                    centroids[c] = new_centroid
+                if centroid_norm > 1e-10:
+                    new_centroid = new_centroid / centroid_norm
+                    
+                    if np.linalg.norm(new_centroid - centroids[c]) > 1e-6:
+                        changed = True
+                        centroids[c] = new_centroid
         
         if not changed:
             break
@@ -518,7 +556,7 @@ def _cluster_attractions_by_angle(
     # Filter out empty clusters
     clusters = [c for c in clusters if c]
     
-    return clusters if clusters else [[i for i in range(len(attraction_vectors))]]
+    return clusters if clusters else [[i for i in range(n)]]
 
 
 def _apply_directional_blending(
