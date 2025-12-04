@@ -2,6 +2,11 @@ import numpy as np
 import networkx as nx
 from scipy import ndimage
 from skimage.morphology import skeletonize
+try:
+    from skimage.morphology import skeletonize_3d
+    HAS_SKELETONIZE_3D = True
+except ImportError:
+    HAS_SKELETONIZE_3D = False
 from typing import Dict, Tuple, Any
 
 
@@ -40,15 +45,39 @@ def extract_centerline_graph(
     bbox_min = np.asarray(bbox_min, dtype=float)
     spacing = np.asarray(spacing, dtype=float)
 
-    # 3D skeleton (method='lee' for better topology preservation in 3D)
-    skeleton = skeletonize(fluid_mask, method='lee')
+    labeled, num_components = ndimage.label(fluid_mask)
+    if num_components > 1:
+        component_sizes = np.bincount(labeled.ravel())
+        component_sizes[0] = 0
+        largest_component = np.argmax(component_sizes)
+        fluid_mask_filtered = (labeled == largest_component)
+    else:
+        fluid_mask_filtered = fluid_mask
+
+    skeleton = None
+    if HAS_SKELETONIZE_3D:
+        try:
+            skeleton = skeletonize_3d(fluid_mask_filtered)
+        except Exception:
+            pass
+    
+    if skeleton is None or not skeleton.any():
+        try:
+            skeleton = skeletonize(fluid_mask_filtered, method='lee')
+        except Exception:
+            skeleton = None
 
     # Distance transform gives radius in voxel units -> convert to world
-    dist_voxel = ndimage.distance_transform_edt(fluid_mask)
+    dist_voxel = ndimage.distance_transform_edt(fluid_mask_filtered)
     dist_world = dist_voxel * np.mean(spacing)
 
-    idx_i, idx_j, idx_k = np.where(skeleton)
-    num_skel_voxels = len(idx_i)
+    if skeleton is None or not skeleton.any():
+        idx_i, idx_j, idx_k = np.array([]), np.array([]), np.array([])
+        num_skel_voxels = 0
+    else:
+        idx_i, idx_j, idx_k = np.where(skeleton)
+        num_skel_voxels = len(idx_i)
+    
     if num_skel_voxels == 0:
         raise RuntimeError("Skeletonization produced zero voxels.")
 

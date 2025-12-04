@@ -195,11 +195,29 @@ def validate_and_repair_geometry(
         pitch=voxel_pitch,
     )
 
-    G_centerline, centerline_meta = extract_centerline_graph(
-        fluid_mask,
-        bbox_min=bbox_min,
-        spacing=spacing,
-    )
+    centerline_warnings = []
+    try:
+        G_centerline, centerline_meta = extract_centerline_graph(
+            fluid_mask,
+            bbox_min=bbox_min,
+            spacing=spacing,
+        )
+    except RuntimeError as e:
+        if "Skeletonization produced zero voxels" in str(e):
+            warning_msg = f"Centerline extraction failed at voxel_pitch={voxel_pitch}: {e}. Proceeding without centerline."
+            centerline_warnings.append(warning_msg)
+            print(f"[WARNING] {warning_msg}")
+            G_centerline = nx.Graph()
+            centerline_meta = {
+                "bbox_min": bbox_min.tolist(),
+                "spacing": spacing.tolist(),
+                "num_nodes": 0,
+                "num_edges": 0,
+                "grid_shape": list(fluid_mask.shape),
+                "warning": warning_msg,
+            }
+        else:
+            raise
 
     pitch_mean = float(np.mean(spacing))
     scaffold_mesh = make_scaffold_shell_from_fluid(fluid_mask, pitch_mean, wall_thickness)
