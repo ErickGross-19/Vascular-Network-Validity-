@@ -1,6 +1,6 @@
 """Network evaluation API for quality assessment."""
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 import numpy as np
 from dataclasses import dataclass
 
@@ -24,12 +24,17 @@ class EvalConfig:
 
 def evaluate_network(
     network: VascularNetwork,
-    tissue_points: np.ndarray,
+    tissue_points: Union[np.ndarray, int],
     config: Optional[EvalConfig] = None,
 ) -> EvalResult:
     """Evaluate vascular network quality with comprehensive metrics."""
     if config is None:
         config = EvalConfig()
+    
+    if isinstance(tissue_points, int):
+        if network.domain is None:
+            raise ValueError("Network must have a domain to generate tissue points")
+        tissue_points = network.domain.sample_points(n_points=tissue_points)
     
     coverage = _compute_coverage_metrics(network, tissue_points)
     flow = _compute_flow_metrics(network, config)

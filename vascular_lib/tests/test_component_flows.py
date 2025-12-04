@@ -21,7 +21,7 @@ def test_compute_component_flows_dual_tree():
         vessel_type="arterial",
     )
     arterial_root = list(network.nodes.values())[0].id
-    bifurcate(network, arterial_root, angle1=30, angle2=-30, length1=0.01, length2=0.01)
+    bifurcate(network, arterial_root, angle_deg=30, length=0.01)
     
     add_outlet(
         network,

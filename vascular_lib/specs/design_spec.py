@@ -195,6 +195,18 @@ class TreeSpec:
             outlets=[OutletSpec.from_dict(o) for o in d["outlets"]],
             colonization=ColonizationSpec.from_dict(d["colonization"]),
         )
+    
+    @staticmethod
+    def single_inlet(inlet_position: Tuple[float, float, float], 
+                     inlet_radius: float,
+                     colonization: ColonizationSpec,
+                     vessel_type: Literal["arterial", "venous"] = "arterial") -> 'TreeSpec':
+        """Convenience constructor for single inlet tree (no outlets)."""
+        return TreeSpec(
+            inlets=[InletSpec(position=inlet_position, radius=inlet_radius, vessel_type=vessel_type)],
+            outlets=[],
+            colonization=colonization,
+        )
 
 
 @dataclass
@@ -221,6 +233,21 @@ class DualTreeSpec:
             venous_outlets=[OutletSpec.from_dict(o) for o in d["venous_outlets"]],
             arterial_colonization=ColonizationSpec.from_dict(d["arterial_colonization"]),
             venous_colonization=ColonizationSpec.from_dict(d["venous_colonization"]),
+        )
+    
+    @staticmethod
+    def single_inlet_outlet(arterial_inlet_position: Tuple[float, float, float],
+                           arterial_inlet_radius: float,
+                           venous_outlet_position: Tuple[float, float, float],
+                           venous_outlet_radius: float,
+                           arterial_colonization: ColonizationSpec,
+                           venous_colonization: ColonizationSpec) -> 'DualTreeSpec':
+        """Convenience constructor for single arterial inlet and single venous outlet."""
+        return DualTreeSpec(
+            arterial_inlets=[InletSpec(position=arterial_inlet_position, radius=arterial_inlet_radius, vessel_type="arterial")],
+            venous_outlets=[OutletSpec(position=venous_outlet_position, radius=venous_outlet_radius, vessel_type="venous")],
+            arterial_colonization=arterial_colonization,
+            venous_colonization=venous_colonization,
         )
 
 
