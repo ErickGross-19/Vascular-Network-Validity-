@@ -142,8 +142,8 @@ def embed_tree_as_negative_space(
         domain_min = np.array([domain.x_min, domain.y_min, domain.z_min])
         domain_max = np.array([domain.x_max, domain.y_max, domain.z_max])
     elif isinstance(domain, EllipsoidDomain):
-        center = np.array([domain.center_x, domain.center_y, domain.center_z])
-        radii = np.array([domain.radius_x, domain.radius_y, domain.radius_z])
+        center = np.array([domain.center.x, domain.center.y, domain.center.z])
+        radii = np.array([domain.semi_axis_a, domain.semi_axis_b, domain.semi_axis_c])
         domain_min = center - radii
         domain_max = center + radii
     else:
