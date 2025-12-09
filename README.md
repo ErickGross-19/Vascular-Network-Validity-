@@ -126,8 +126,11 @@ params = get_preset("liver_arterial_dense")
 space_colonization_step(network, tissue_points, params, seed=42)
 
 # 2. Export to STL
-from vascular_lib.adapters import export_stl
+from vascular_lib.adapters import export_stl, export_hollow_tube_stl
 export_stl(network, output_path="network.stl", mode="fast", repair=True)
+
+# Or export as hollow tube for fluid flow
+export_hollow_tube_stl(network, output_path="hollow_network.stl", wall_thickness=1.0)
 
 # 3. Validate and analyze with vascular_network
 from vascular_network import validate_and_repair_geometry
