@@ -82,6 +82,7 @@ save_json(network, "my_network.json")
 ### Domains
 
 - **EllipsoidDomain** - Ellipsoidal organ shape (e.g., liver)
+- **BoxDomain** - Rectangular box domain
 - **MeshDomain** - STL mesh-based domain
 
 ### Operations
@@ -116,9 +117,14 @@ save_json(network, "my_network.json")
 **Export & Integration:**
 - `to_trimesh()` - Export to STL mesh (fast/robust modes)
 - `export_stl()` - Export to STL file with repair
+- `to_hollow_tube_mesh()` - Create hollow tube mesh for fluid flow
+- `export_hollow_tube_stl()` - Export hollow tube to STL file
 - `to_networkx_graph()` - Convert to NetworkX for analysis
 - `from_networkx_graph()` - Convert from NetworkX
 - `make_full_report()` - Comprehensive LLM-friendly report
+
+**Embedding:**
+- `embed_tree_as_negative_space()` - Embed vascular tree into domain as void channel
 
 **I/O:**
 - `save_json()` - Save network to JSON
@@ -208,6 +214,55 @@ Pipeline demonstrates:
 7. Export STL mesh with repair
 8. Generate comprehensive report
 
+## Hollow Tube Export
+
+Create hollow tube meshes for fluid flow simulation:
+
+```python
+from vascular_lib.adapters import to_hollow_tube_mesh, export_hollow_tube_stl
+
+# Create hollow tube with 1mm wall thickness
+result = to_hollow_tube_mesh(network, wall_thickness=1.0)
+hollow_mesh = result.metadata['mesh']
+hollow_mesh.export('hollow_network.stl')
+
+# Or use convenience function
+export_hollow_tube_stl(network, 'hollow_network.stl', wall_thickness=1.0)
+```
+
+The hollow tube creates a continuous inner channel from inlet to terminal nodes, allowing water or other fluids to flow through the entire vascular network.
+
+## Embedding Networks as Negative Space
+
+Embed vascular networks into solid domains (boxes or ellipsoids) as void channels:
+
+```python
+from vascular_lib.ops.embedding import embed_tree_as_negative_space
+from vascular_lib.core.domain import BoxDomain
+
+# Create a box domain (in millimeters)
+domain = BoxDomain(x_min=-50, x_max=50, y_min=-50, y_max=50, z_min=-50, z_max=50)
+
+# Embed tree as negative space (void channel)
+result = embed_tree_as_negative_space(
+    tree_stl_path='network.stl',
+    domain=domain,
+    voxel_pitch=0.5,  # 0.5mm voxels for resolution
+    output_void=True,
+    stl_units='mm',
+)
+
+# Export results
+result['domain_with_void'].export('mold_with_channel.stl')
+result['void'].export('channel_only.stl')
+```
+
+**Important notes:**
+- All spatial parameters are in **millimeters** by default
+- The domain coordinates must be in the same units as `geometry_units` (default: mm)
+- The tree STL must intersect the domain to create a through-channel
+- Use `stl_units='mm'` or `stl_units='m'` to explicitly set STL units
+
 ## Architecture
 
 ```
@@ -215,7 +270,7 @@ vascular_lib/
 ├── core/           # Data structures (Point3D, Node, VascularNetwork, etc.)
 ├── rules/          # Constraints and biophysical rules
 ├── spatial/        # Spatial indexing for collision detection
-├── ops/            # Operations (build, growth, collision, space_colonization)
+├── ops/            # Operations (build, growth, collision, space_colonization, embedding)
 ├── analysis/       # Query, analysis, and full flow solver
 ├── adapters/       # Integration with existing vascular_network package
 ├── io/             # JSON serialization
