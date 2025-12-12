@@ -268,6 +268,8 @@ def embed_tree_as_negative_space(
         print(f"Smoothing with {smoothing_iters} iterations...")
         solid_mask = ndimage.binary_closing(solid_mask, iterations=smoothing_iters // 2)
         solid_mask = ndimage.binary_opening(solid_mask, iterations=smoothing_iters // 2)
+        solid_mask &= ~void_mask
+        print(f"Solid mask after smoothing (with void re-enforced): {solid_mask.sum()} voxels")
     
     result = {}
     
