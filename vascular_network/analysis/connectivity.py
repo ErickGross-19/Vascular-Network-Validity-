@@ -3,6 +3,8 @@ import trimesh
 from scipy import ndimage
 from typing import Tuple, Dict, Any
 
+from ..mesh.voxel_utils import voxelized_with_retry
+
 
 def mesh_to_fluid_mask(mesh: trimesh.Trimesh, pitch: float = 0.1):
     """
@@ -21,8 +23,13 @@ def mesh_to_fluid_mask(mesh: trimesh.Trimesh, pitch: float = 0.1):
     spacing    : (3,) float
         Per-axis voxel spacing (dx, dy, dz)
     """
-    # Voxelize with trimesh
-    vox = mesh.voxelized(pitch=pitch)
+    vox = voxelized_with_retry(
+        mesh,
+        pitch=pitch,
+        max_attempts=4,
+        factor=1.5,
+        log_prefix="[mesh_to_fluid_mask] ",
+    )
     vox_filled = vox.fill()
     fluid_mask = vox_filled.matrix.astype(bool)
 

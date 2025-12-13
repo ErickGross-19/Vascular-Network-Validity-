@@ -2,6 +2,7 @@ import numpy as np
 import trimesh
 
 from ..models import MeshDiagnostics, SurfaceQuality
+from .voxel_utils import voxelized_with_retry
 
 
 def count_degenerate_faces(mesh: trimesh.Trimesh, area_eps: float = 1e-18) -> int:
@@ -24,9 +25,18 @@ def estimate_voxel_volume(
       - count voxels * pitch^3
 
     Returns None if voxelization fails.
+    
+    Automatically retries with larger pitch on memory errors.
     """
     try:
-        vox = mesh.voxelized(pitch, method=method)
+        vox = voxelized_with_retry(
+            mesh,
+            pitch=pitch,
+            method=method,
+            max_attempts=4,
+            factor=1.5,
+            log_prefix="[estimate_voxel_volume] ",
+        )
         vox_filled = vox.fill()
         mask = vox_filled.matrix.astype(bool)
         num_voxels = int(mask.sum())

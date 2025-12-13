@@ -18,6 +18,49 @@ from ..core.domain import DomainSpec, BoxDomain, EllipsoidDomain
 from ..utils.units import detect_unit, warn_if_legacy_units, CANONICAL_UNIT
 
 
+def _voxelized_with_retry(
+    mesh: trimesh.Trimesh,
+    pitch: float,
+    max_attempts: int = 4,
+    factor: float = 1.5,
+    log_prefix: str = "",
+):
+    """
+    Voxelize a mesh with automatic retry on memory errors.
+    
+    If voxelization fails due to memory constraints, the pitch is increased
+    by the specified factor and retried up to max_attempts times.
+    
+    Returns tuple of (voxel_grid, final_pitch) so caller knows if pitch changed.
+    """
+    cur = float(pitch)
+    last_exc = None
+    
+    for attempt in range(max_attempts):
+        try:
+            vox = mesh.voxelized(cur)
+            return vox, cur
+        except MemoryError as e:
+            last_exc = e
+            print(
+                f"{log_prefix}voxelized(pitch={cur:.4g}) raised MemoryError, "
+                f"increasing pitch (attempt {attempt + 1}/{max_attempts})..."
+            )
+            cur *= factor
+        except ValueError as e:
+            last_exc = e
+            print(
+                f"{log_prefix}voxelized(pitch={cur:.4g}) failed ({e}), "
+                f"increasing pitch (attempt {attempt + 1}/{max_attempts})..."
+            )
+            cur *= factor
+    
+    raise RuntimeError(
+        f"{log_prefix}voxelization failed after {max_attempts} attempts; "
+        f"final pitch={cur:.4g}, original pitch={pitch:.4g}"
+    ) from last_exc
+
+
 def embed_tree_as_negative_space(
     tree_stl_path: Union[str, Path],
     domain: DomainSpec,
@@ -189,7 +232,16 @@ def embed_tree_as_negative_space(
     
     print(f"Domain mask: {domain_mask.sum()} voxels ({100 * domain_mask.sum() / domain_mask.size:.1f}%)")
     
-    tree_voxels = tree_mesh.voxelized(pitch=voxel_pitch)
+    tree_voxels, actual_pitch = _voxelized_with_retry(
+        tree_mesh,
+        pitch=voxel_pitch,
+        max_attempts=4,
+        factor=1.5,
+        log_prefix="[embed_tree_as_negative_space] ",
+    )
+    if actual_pitch != voxel_pitch:
+        print(f"Note: voxel_pitch was adjusted from {voxel_pitch:.4g} to {actual_pitch:.4g} due to memory constraints")
+        voxel_pitch = actual_pitch
     tree_mask = tree_voxels.matrix
     
     tree_origin = tree_voxels.transform[:3, 3]

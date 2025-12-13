@@ -6,6 +6,8 @@ from skimage.measure import marching_cubes
 import trimesh.smoothing as tmsmooth
 from tqdm import tqdm
 
+from .voxel_utils import voxelized_with_retry
+
 
 def auto_adjust_voxel_pitch(
     mesh: trimesh.Trimesh,
@@ -79,20 +81,13 @@ def voxel_remesh_and_smooth(
         mesh, requested_pitch=pitch, max_voxels=max_voxels
     )
 
-    for attempt in range(4):
-        try:
-            vox = mesh.voxelized(pitch_eff)
-            break
-        except ValueError as e:
-            print(
-                f"[voxel_remesh_and_smooth] voxelized(pitch={pitch_eff:.4g}) failed ({e}), "
-                f"increasing pitch..."
-            )
-            pitch_eff *= 1.5
-    else:
-        raise RuntimeError(
-            f"Voxelization failed even after relaxing pitch; final pitch={pitch_eff:.4g}"
-        )
+    vox = voxelized_with_retry(
+        mesh,
+        pitch=pitch_eff,
+        max_attempts=4,
+        factor=1.5,
+        log_prefix="[voxel_remesh_and_smooth] ",
+    )
 
     vox_filled = vox.fill()
     fluid_mask = vox_filled.matrix.astype(bool)
